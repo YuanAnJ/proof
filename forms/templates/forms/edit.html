@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>信息编辑</title>
+    <style>
+        /* 基础样式 */
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0 auto;
+            padding: 20px;
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: url('/static/forms/background.png') center/cover no-repeat fixed;
+            min-height: 100vh;
+        }
+
+        .home-button {
+            position: fixed;
+            top: 20px;
+            right: 10px;
+            padding: 10px 20px;
+            background: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: .3s;
+        }
+
+        .home-button:hover {
+            background-color: #1976D2;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        /* 布局容器 */
+        .form-container { width: 800px; }
+        .form-container, .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 表单组件 */
+        .form-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .form-header h1 {
+            color: #333;
+            font-size: 28px;
+            margin: 0;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4CAF50;
+            display: inline-block;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        /* 输入组件 */
+        .input-container {
+            flex: 1;
+            position: relative;
+        }
+
+        .input-flex {
+            display: flex;
+            gap: 20px;
+        }
+
+        .input-flex-half {
+            display: flex;
+            align-items: center;
+            width: 50%;
+        }
+
+        .input-half {
+            width: 50%;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: .3s ease;
+            box-sizing: border-box;
+        }
+
+        input:focus, select:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 5px rgba(76, 175, 80, 0.2);
+            outline: none;
+        }
+
+        /* 标签样式 */
+        label {
+            width: 120px;
+            text-align: right;
+            margin-right: 20px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .label-compact {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        /* 按钮样式 */
+        .button-container {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all .3s;
+        }
+
+        .btn-submit {
+            padding: 12px 40px;
+            background-color: #4CAF50;
+            color: white;
+            font-size: 16px;
+        }
+
+        .btn-submit:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        /* 作者管理按钮 */
+        .author-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            font-size: 18px;
+            line-height: 24px;
+            position: absolute;
+            right: -60px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .add-author-btn { background-color: #4CAF50; }
+        .remove-author-btn { background-color: #f44336; }
+
+        .add-author-btn:hover, .remove-author-btn:hover {
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .add-author-btn:hover { background-color: #45a049; }
+        .remove-author-btn:hover { background-color: #d32f2f; }
+
+        /* 复选框组 */
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .checkbox-item label {
+            width: auto;
+            margin: 0;
+            font-weight: normal;
+        }
+
+        /* 模态框 */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            width: 500px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .modal-content.small {
+            width: 300px;
+            text-align: center;
+        }
+
+        .modal-title {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .modal-title.no-margin {
+            margin-bottom: 0;
+        }
+
+                /* 模态框按钮 */
+                .modal-buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+            gap: 20px;
+        }
+
+        .modal-button {
+            padding: 10px 40px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .confirm-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .cancel-button {
+            background-color: #f44336;
+            color: white;
+        }
+
+        .confirm-button:hover {
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .cancel-button:hover {
+            background-color: #d32f2f;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(244, 67, 54, 0.3);
+        }
+
+        /* 表单预览 */
+        .form-review {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .form-review-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-review-item:last-child {
+            border-bottom: none;
+        }
+
+        .form-review-label {
+            color: #666;
+            font-weight: 500;
+            width: 100px;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .form-review-value {
+            color: #333;
+            flex: 1;
+            text-align: left;
+            margin-left: 10px;
+            word-break: break-all;
+        }
+
+        /* 标题输入组件 */
+        .title-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .title-input {
+            flex: 1;
+        }
+
+        .title-type {
+            width: 80px;
+            flex-shrink: 0;
+        }
+
+        /* 其他工具类 */
+        .flex {
+            display: flex;
+        }
+
+        .flex-1 {
+            flex: 1;
+        }
+
+        /* 成功提示模态框 */
+        .success-modal .modal-content {
+            padding: 40px;
+            text-align: center;
+            width: 360px;
+        }
+
+        .success-icon {
+            color: #4CAF50;
+            font-size: 48px;
+            margin-bottom: 20px;
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        .success-title {
+            color: #333;
+            font-size: 24px;
+            margin: 0;
+            animation: fadeInUp 0.3s ease-out 0.1s both;
+        }
+
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="/forms/query?{{ request.GET.urlencode }}" class="home-button">返回查询</a>
+    
+    <div class="form-container">
+        <div class="form-header">
+            <h1>信息编辑</h1>
+
+        </div>
+        
+        <form method="POST">
+            {% csrf_token %}
+            
+            <!-- 基本信息字段 -->
+            <div class="form-group">
+                <label for="input-number" class="required">信息编号</label>
+                <div class="input-container">
+                    <input type="text" id="input-number" name="number" value="{{ data.number }}" readonly>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="feedback-date" class="required">反馈日期</label>
+                <div class="input-container">
+                    <input type="date" id="feedback-date" name="feedback-date" value="{{ data.feedback_date|date:'Y-m-d' }}" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="feedback-department" class="required">反馈部门</label>
+                <div class="input-container">
+                    <input type="text" id="feedback-department" name="feedback-department" value="{{ data.feedback_department }}" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-title" class="required">报告题目</label>
+                <div class="input-container">
+                    <input type="text" id="input-title" name="title" value="{{ data.title }}" required>
+                </div>
+            </div>
+
+            <div class="form-group author-container">
+                <label for="input-author" class="required">作者一</label>
+                <div class="input-container input-flex">
+                    <input type="text" id="input-author" name="author" value="{{ data.author }}" required style="width: 50%;">
+                    <div class="input-flex-half">
+                        <label for="input-unit" class="required" style="width: auto; margin-right: 10px;">所在单位</label>
+                        <input type="text" id="input-unit" name="unit" value="{{ data.unit }}" required style="flex: 1;">
+                    </div>
+                </div>
+                <button type="button" class="btn author-btn add-author-btn" id="add-author-btn" onclick="addAuthor()">+</button>
+            </div>
+
+            <div class="form-group author-container" id="author-container-2" style="display: none;">
+                <label for="input-author-2">作者二</label>
+                <div class="input-container input-flex">
+                    <input type="text" id="input-author-2" name="author_2" value="{{ data.author_2 }}" style="width: 50%;">
+                    <div class="input-flex-half">
+                        <label for="input-unit-2" style="width: auto; margin-right: 10px;">所在单位</label>
+                        <input type="text" id="input-unit-2" name="unit_2" value="{{ data.unit_2 }}" style="flex: 1;">
+                    </div>
+                </div>
+                <button type="button" class="btn author-btn remove-author-btn" onclick="removeAuthor(2)">-</button>
+            </div>
+
+            <div class="form-group author-container" id="author-container-3" style="display: none;">
+                <label for="input-author-3">作者三</label>
+                <div class="input-container input-flex">
+                    <input type="text" id="input-author-3" name="author_3" value="{{ data.author_3 }}" style="width: 50%;">
+                    <div class="input-flex-half">
+                        <label for="input-unit-3" style="width: auto; margin-right: 10px;">所在单位</label>
+                        <input type="text" id="input-unit-3" name="unit_3" value="{{ data.unit_3 }}" style="flex: 1;">
+                    </div>
+                </div>
+                <button type="button" class="btn author-btn remove-author-btn" onclick="removeAuthor(3)">-</button>
+            </div>
+
+            <div class="form-group author-container" id="author-container-4" style="display: none;">
+                <label for="input-author-4">作者四</label>
+                <div class="input-container input-flex">
+                    <input type="text" id="input-author-4" name="author_4" value="{{ data.author_4 }}" style="width: 50%;">
+                    <div class="input-flex-half">
+                        <label for="input-unit-4" style="width: auto; margin-right: 10px;">所在单位</label>
+                        <input type="text" id="input-unit-4" name="unit_4" value="{{ data.unit_4 }}" style="flex: 1;">
+                    </div>
+                </div>
+                <button type="button" class="btn author-btn remove-author-btn" onclick="removeAuthor(4)">-</button>
+            </div>
+
+            <div class="form-group author-container" id="author-container-5" style="display: none;">
+                <label for="input-author-5">作者五</label>
+                <div class="input-container input-flex">
+                    <input type="text" id="input-author-5" name="author_5" value="{{ data.author_5 }}" style="width: 50%;">
+                    <div class="input-flex-half">
+                        <label for="input-unit-5" style="width: auto; margin-right: 10px;">所在单位</label>
+                        <input type="text" id="input-unit-5" name="unit_5" value="{{ data.unit_5 }}" style="flex: 1;">
+                    </div>
+                </div>
+                <button type="button" class="btn author-btn remove-author-btn" onclick="removeAuthor(5)">-</button>
+            </div>
+
+            <div class="form-group author-container" id="author-container-6" style="display: none;">
+                <label for="input-author-6">作者六</label>
+                <div class="input-container input-flex">
+                    <input type="text" id="input-author-6" name="author_6" value="{{ data.author_6 }}" style="width: 50%;">
+                    <div class="input-flex-half">
+                        <label for="input-unit-6" style="width: auto; margin-right: 10px;">所在单位</label>
+                        <input type="text" id="input-unit-6" name="unit_6" value="{{ data.unit_6 }}" style="flex: 1;">
+                    </div>
+                </div>
+                <button type="button" class="btn author-btn remove-author-btn" onclick="removeAuthor(6)">-</button>
+            </div>
+
+            <div class="form-group author-container" id="author-container-7" style="display: none;">
+                <label for="input-author-7">作者七</label>
+                <div class="input-container input-flex">
+                    <input type="text" id="input-author-7" name="author_7" value="{{ data.author_7 }}" style="width: 50%;">
+                    <div class="input-flex-half">
+                        <label for="input-unit-7" style="width: auto; margin-right: 10px;">所在单位</label>
+                        <input type="text" id="input-unit-7" name="unit_7" value="{{ data.unit_7 }}" style="flex: 1;">
+                    </div>
+                </div>
+                <button type="button" class="btn author-btn remove-author-btn" onclick="removeAuthor(7)">-</button>
+            </div>
+
+            <div class="form-group author-container" id="author-container-8" style="display: none;">
+                <label for="input-author-8">作者八</label>
+                <div class="input-container input-flex">
+                    <input type="text" id="input-author-8" name="author_8" value="{{ data.author_8 }}" style="width: 50%;">
+                    <div class="input-flex-half">
+                        <label for="input-unit-8" style="width: auto; margin-right: 10px;">所在单位</label>
+                        <input type="text" id="input-unit-8" name="unit_8" value="{{ data.unit_8 }}" style="flex: 1;">
+                    </div>
+                </div>
+                <button type="button" class="btn author-btn remove-author-btn" onclick="removeAuthor(8)">-</button>
+            </div>
+
+            <div class="form-group author-container" id="author-container-9" style="display: none;">
+                <label for="input-author-9">作者九</label>
+                <div class="input-container input-flex">
+                    <input type="text" id="input-author-9" name="author_9" value="{{ data.author_9 }}" style="width: 50%;">
+                    <div class="input-flex-half">
+                        <label for="input-unit-9" style="width: auto; margin-right: 10px;">所在单位</label>
+                        <input type="text" id="input-unit-9" name="unit_9" value="{{ data.unit_9 }}" style="flex: 1;">
+                    </div>
+                </div>
+                <button type="button" class="btn author-btn remove-author-btn" onclick="removeAuthor(9)">-</button>
+            </div>
+
+            <div class="form-group author-container" id="author-container-10" style="display: none;">
+                <label for="input-author-10">作者十</label>
+                <div class="input-container input-flex">
+                    <input type="text" id="input-author-10" name="author_10" value="{{ data.author_10 }}" style="width: 50%;">
+                    <div class="input-flex-half">
+                        <label for="input-unit-10" style="width: auto; margin-right: 10px;">所在单位</label>
+                        <input type="text" id="input-unit-10" name="unit_10" value="{{ data.unit_10 }}" style="flex: 1;">
+                    </div>
+                </div>
+                <button type="button" class="btn author-btn remove-author-btn" onclick="removeAuthor(10)">-</button>
+            </div>
+
+            <!-- 采纳级别 -->
+            <div class="form-group">
+                <label class="required">采纳级别</label>
+                <div class="input-container">
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="accept-level" value="无" {% if '无' in data.accept_level %}checked{% endif %}>
+                            <label>无</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="accept-level" value="中办" {% if '中办' in data.accept_level %}checked{% endif %}>
+                            <label>中办</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="accept-level" value="国办" {% if '国办' in data.accept_level %}checked{% endif %}>
+                            <label>国办</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="accept-level" value="中央有关部门" {% if '中央有关部门' in data.accept_level %}checked{% endif %}>
+                            <label>中央有关部门</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="accept-level" value="国家部委" {% if '国家部委' in data.accept_level %}checked{% endif %}>
+                            <label>国家部委</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="accept-level" value="省级" {% if '省级' in data.accept_level %}checked{% endif %}>
+                            <label>省级</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="accept-level" value="市厅级" {% if '市厅级' in data.accept_level %}checked{% endif %}>
+                            <label>市厅级</label>
+                        </div>
+                        <!-- <div class="checkbox-item">
+                            <input type="checkbox" id="accept_other" name="accept_level" value="其他" 
+                                onchange="toggleOtherInput('accept_level')">
+                            <label for="accept_other">其他</label>
+                        </div> -->
+                    </div>
+                    <!-- <input type="text" id="accept_level_other" name="accept_level_other" class="other-input" 
+                        placeholder="请输入其他采纳级别"> -->
+                </div>
+            </div>
+
+            <!-- 批示级别 -->
+            <div class="form-group">
+                <label class="required">批示级别</label>
+                <div class="input-container">
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="instruction-level" value="无" {% if '无' in data.instruction_level %}checked{% endif %}>
+                            <label>无</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="instruction-level" value="中央主要领导" {% if '中央主要领导' in data.instruction_level %}checked{% endif %}>
+                            <label>中央主要领导</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="instruction-level" value="中央政治局常委" {% if '中央政治局常委' in data.instruction_level %}checked{% endif %}>
+                            <label>中央政治局常委</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="instruction-level" value="中央政治局委员" {% if '中央政治局委员' in data.instruction_level %}checked{% endif %}>
+                            <label>中央政治局委员</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="instruction-level" value="中央有关领导" {% if '中央有关领导' in data.instruction_level %}checked{% endif %}>
+                            <label>中央有关领导</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="instruction-level" value="正部级领导" {% if '正部级领导' in data.instruction_level %}checked{% endif %}>
+                            <label>正部级领导</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="instruction-level" value="副部级领导" {% if '副部级领导' in data.instruction_level %}checked{% endif %}>
+                            <label>副部级领导</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="instruction-level" value="省级有关领导" {% if '省级有关领导' in data.instruction_level %}checked{% endif %}>
+                            <label>省级有关领导</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox"name="instruction-level" value="市级主要领导" {% if '市级主要领导' in data.instruction_level %}checked{% endif %}>
+                            <label>市级主要领导</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" name="instruction-level" value="市有关领导" {% if '市有关领导' in data.instruction_level %}checked{% endif %}>
+                            <label>市有关领导</label>
+                        </div>
+                        <!-- <div class="checkbox-item">
+                            <input type="checkbox" id="instruction_other" name="instruction_level" value="其他" 
+                                onchange="toggleOtherInput('instruction_level')">
+                            <label for="instruction_other">其他</label>
+                        </div> -->
+                    </div>
+                    <!-- <input type="text" id="instruction_level_other" name="instruction_level_other" class="other-input" 
+                        placeholder="请输入其他批示级别"> -->
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="input-remark">备注</label>
+                <div class="input-container">
+                    <input type="text" id="input-remark" name="remark" value="{{ data.remark }}">
+                </div>
+            </div>
+
+            <div class="button-container">
+                <button type="submit" class="btn btn-submit">保存</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- 确认模态框 -->
+    <div class="modal" id="confirm-modal">
+        <div class="modal-content">
+            <h3 class="modal-title">确认修改这些信息吗？</h3>
+            <div class="form-review" id="form-review"></div>
+                <!-- 将通过JavaScript动态填充 -->
+            <div class="modal-buttons">
+                <button class="modal-button confirm-button" id="confirm-submit">确认</button>
+                <button class="modal-button cancel-button" id="cancel-submit">取消</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 成功提示模态框 -->
+    <div class="modal success-modal" id="success-modal">
+        <div class="modal-content">
+            <div class="success-icon">✓</div>
+            <h3 class="success-title">修改成功</h3>
+        </div>
+    </div>
+
+    <script>
+        const maxAuthors = 10;  // 最大作者数量
+        let currentAuthorCount = 1;  // 当前作者数量默认为1
+
+        // 页面加载时检查"其他"选项和作者显示
+        document.addEventListener('DOMContentLoaded', function() {
+            // // 检查采纳级别其他选项
+            // const acceptOtherInput = document.getElementById('accept_level_other');
+            // const acceptOtherCheckbox = document.getElementById('accept_other');
+            // // 获取标准采纳级别值
+            // const standardAcceptLevels = ['无', '中办', '国办', '中央有关部门', '国家部委', '省级', '市厅级'];
+            
+            // // 分割数据库中的采纳级别值
+            // const acceptLevels = "{{ data.accept_level }}".split(', ').map(item => item.trim());
+            // // 过滤出非标准值
+            // const nonStandardAcceptLevels = acceptLevels.filter(level => !standardAcceptLevels.includes(level));
+            
+            // if (nonStandardAcceptLevels.length > 0) {
+            //     acceptOtherCheckbox.checked = true;
+            //     acceptOtherInput.style.display = 'block';
+            //     acceptOtherInput.value = nonStandardAcceptLevels.join(', ');
+            //     acceptOtherInput.required = true;
+            // }
+
+            // // 检查批示级别其他选项
+            // const instructionOtherInput = document.getElementById('instruction_level_other');
+            // const instructionOtherCheckbox = document.getElementById('instruction_other');
+            // // 获取标准批示级别值
+            // const standardInstructionLevels = ['无', '中央主要领导', '中央政治局常委', '中央政治局委员', 
+            //     '中央有关领导', '正部级领导', '副部级领导', '省级有关领导', '市级主要领导', '市有关领导'];
+            
+            // // 分割数据库中的批示级别值
+            // const instructionLevels = "{{ data.instruction_level }}".split(', ').map(item => item.trim());
+            // // 过滤出非标准值
+            // const nonStandardInstructionLevels = instructionLevels.filter(level => !standardInstructionLevels.includes(level));
+            
+            // if (nonStandardInstructionLevels.length > 0) {
+            //     instructionOtherCheckbox.checked = true;
+            //     instructionOtherInput.style.display = 'block';
+            //     instructionOtherInput.value = nonStandardInstructionLevels.join(', ');
+            //     instructionOtherInput.required = true;
+            // }
+
+            // 检查已有作者并显示相应的作者行
+            for (let i = 2; i <= maxAuthors; i++) {
+                const authorValue = document.getElementById(`input-author-${i}`).value;
+                const unitValue = document.getElementById(`input-unit-${i}`).value;
+                if (authorValue || unitValue) {
+                    document.getElementById(`author-container-${i}`).style.display = 'flex';
+                    currentAuthorCount = Math.max(currentAuthorCount, i);
+                }
+            }
+            updateAuthorButtons();
+        });
+
+        // 处理"其他"选项的显示/隐藏
+        // function toggleOtherInput(fieldName) {
+        //     const otherCheckbox = document.getElementById(fieldName === 'accept_level' ? 'accept_other' : 'instruction_other');
+        //     const otherInput = document.getElementById(fieldName === 'accept_level' ? 'accept_level_other' : 'instruction_level_other');
+            
+        //     if (otherCheckbox.checked) {
+        //         otherInput.style.display = 'block';
+        //         otherInput.required = true;
+        //         // 清空其他输入框的值，因为现有值已经在复选框中
+        //         otherInput.value = '';
+        //     } else {
+        //         otherInput.style.display = 'none';
+        //         otherInput.required = false;
+        //         otherInput.value = '';
+        //     }
+        // }
+
+        // 更新表单提交处理
+        document.querySelector('form').addEventListener('submit', async function (e) {
+            e.preventDefault();
+
+            const formData = getFormData();
+
+            // 显示预览内容
+            const formReview = document.getElementById('form-review');
+            let authorsList = `${formData.author}（${formData.unit}）`;
+            
+            for (let i = 2; i <= currentAuthorCount; i++) {
+                if (formData[`author_${i}`] || formData[`unit_${i}`]) {
+                    authorsList += `；${formData[`author_${i}`]}（${formData[`unit_${i}`]}）`;
+                }
+            }
+
+            reviewHTML = `
+                <div class="form-review-item">
+                    <span class="form-review-label">反馈日期：</span>
+                    <span class="form-review-value">${formData.feedback_date}</span>
+                </div>
+                <div class="form-review-item">
+                    <span class="form-review-label">反馈部门：</span>
+                    <span class="form-review-value">${formData.feedback_department}</span>
+                </div>
+                <div class="form-review-item">
+                    <span class="form-review-label">报告题目：</span>
+                    <span class="form-review-value">${formData.title}</span>
+                </div>
+                <div class="form-review-item">
+                    <span class="form-review-label">作者信息：</span>
+                    <span class="form-review-value">${authorsList}</span>
+                </div>
+                <div class="form-review-item">
+                    <span class="form-review-label">采纳级别：</span>
+                    <span class="form-review-value">${formData.accept_level}</span>
+                </div>
+                <div class="form-review-item">
+                    <span class="form-review-label">批示级别：</span>
+                    <span class="form-review-value">${formData.instruction_level}</span>
+                </div>
+                <div class="form-review-item">
+                    <span class="form-review-label">备注：</span>
+                    <span class="form-review-value">${formData.remark || '无'}</span>
+                </div>`;
+
+            // 显示确认模态框
+            document.getElementById('form-review').innerHTML = reviewHTML;
+            document.getElementById('confirm-modal').style.display = 'block';
+        });
+
+        // 确认更新
+        document.getElementById('confirm-submit').addEventListener('click', async function() {
+            const number = document.getElementById('input-number').value;
+
+            const formData = getFormData();
+
+            try {
+                const response = await fetch(`/forms/api/update/${number}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    document.getElementById('confirm-modal').style.display = 'none';
+                    document.getElementById('success-modal').style.display = 'block';
+                    
+                    // 获取当前URL中的所有参数
+                    const urlParams = new URLSearchParams(window.location.search);
+                    
+                    // 1秒后跳转，保留所有URL参数
+                    setTimeout(() => {
+                        window.location.href = `/forms/query?${urlParams.toString()}`;
+                    }, 1000);
+                } else {
+                    alert('更新失败: ' + result.message);
+                }
+            } catch (error) {
+                alert('更新失败: ' + error.message);
+            }
+        });
+
+        // 取消更新
+        document.getElementById('cancel-submit').addEventListener('click', function() {
+            document.getElementById('confirm-modal').style.display = 'none';
+        });
+
+        function updateAuthorButtons() {
+            // 先隐藏所有减号按钮
+            for (let i = 2; i <= maxAuthors; i++) {
+                const btn = document.querySelector(`#author-container-${i} .remove-author-btn`);
+                if (btn) btn.style.display = 'none';
+            }
+            
+            // 只显示最后一个可见作者行的减号按钮（如果不是作者1）
+            if (currentAuthorCount > 1) {
+                const lastBtn = document.querySelector(`#author-container-${currentAuthorCount} .remove-author-btn`);
+                if (lastBtn) lastBtn.style.display = 'flex';
+            }
+
+            // 控制添加按钮的显示
+            document.getElementById('add-author-btn').style.display = 
+                currentAuthorCount < maxAuthors ? 'flex' : 'none';
+        }
+
+        function addAuthor() {
+            if (currentAuthorCount < maxAuthors) {
+                currentAuthorCount++;
+                document.getElementById(`author-container-${currentAuthorCount}`).style.display = 'flex';
+                updateAuthorButtons();
+            }
+        }
+
+        function removeAuthor(authorNum) {
+            // 清除该行数据
+            document.getElementById(`input-author-${authorNum}`).value = '';
+            document.getElementById(`input-unit-${authorNum}`).value = '';
+            
+            // 隐藏该行
+            document.getElementById(`author-container-${authorNum}`).style.display = 'none';
+            
+            // 更新当前作者数量
+            currentAuthorCount--;
+            
+            updateAuthorButtons();
+        }
+
+        function getFormData() {
+            const formData = {
+                feedback_date: document.getElementById('feedback-date').value,
+                feedback_department: document.getElementById('feedback-department').value,
+                title: document.getElementById('input-title').value,
+                author: document.getElementById('input-author').value,
+                unit: document.getElementById('input-unit').value,
+                accept_level: Array.from(document.querySelectorAll('input[name="accept-level"]:checked'))
+                    .map(cb => cb.value)
+                    .join('、'),
+                instruction_level: Array.from(document.querySelectorAll('input[name="instruction-level"]:checked'))
+                    .map(cb => cb.value)
+                    .join('、'),
+                remark: document.getElementById('input-remark').value
+            };
+
+            // 处理其他作者
+            for (let i = 2; i <= currentAuthorCount; i++) {
+                const authorValue = document.getElementById(`input-author-${i}`).value;
+                const unitValue = document.getElementById(`input-unit-${i}`).value;
+                if (authorValue || unitValue) {
+                    formData[`author_${i}`] = authorValue;
+                    formData[`unit_${i}`] = unitValue;
+                }
+            }
+
+            return formData;
+        }
+    </script>
+</body>
+</html>

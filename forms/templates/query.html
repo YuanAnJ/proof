@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>查询信息</title>
+    <style>
+        body {
+            background-color: #f5f5f5;
+        }
+        .search-form {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .search-form select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-width: 120px;
+        }
+
+        .search-form input {
+            padding: 5px;
+            margin-right: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            background-color: #ffffff;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+        }
+
+        th,
+        td {
+            border: 1px solid #e8e8e8;
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 14px;  /* 修改默认字体大小为14px */
+            background-color: #ffffff;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f8f8;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+            transition: background-color 0.2s ease;
+        }
+
+        tr:hover td {
+            background-color: #f9f9f9;
+        }
+
+        td:nth-child(10) {
+            white-space: nowrap;
+            text-align: center;
+            width: 100px;  /* 减小宽度 */
+            padding: 12px 8px;  /* 减小内边距 */
+        }
+
+        .search-button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .home-button {
+            position: fixed;
+            top: 20px;
+            right: 10px;
+            padding: 10px 20px;
+            background: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: .3s;
+        }
+
+
+        .home-button:hover {
+            background-color: #1976D2;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .action-link {
+            display: inline-block;
+            padding: 4px 6px;  /* 减小内边距 */
+            border-radius: 3px;
+            transition: all 0.3s ease;
+            color: #2196F3;
+            text-decoration: none;
+            margin: 0 1px;  /* 减小按钮之间的间距 */
+            font-size: 13px;  /* 略微调小操作按钮字体 */
+        }
+
+        .action-link:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            color: #0D47A1;
+            text-decoration: underline;
+        }
+
+        .action-link.print {
+            color: white;
+            background-color: #4CAF50;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .action-link.print:before {
+            content: "🖨️";
+            margin-right: 4px;
+            font-size: 14px;
+        }
+
+        .action-link.print:hover {
+            color: white;
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .action-link.delete {
+            color: #F44336;
+        }
+
+        .action-link.delete:hover {
+            color: #C62828;
+        }
+
+        /* 存证按钮样式 */
+        .action-link.credential {
+            color: #FF9800;  /* 使用橙色 */
+            background-color: transparent;
+            padding: 4px 6px;
+            border-radius: 3px;
+            font-weight: normal;
+            box-shadow: none;
+        }
+
+        .action-link.credential:hover {
+            background-color: transparent;
+            color: #F57C00;  /* 深橙色 */
+            text-decoration: underline;
+        }
+
+        /* 存证结果模态框 */
+        .credential-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto; /* 添加垂直滚动 */
+        }
+
+        .credential-modal-content {
+            position: relative;
+            background-color: #fefefe;
+            margin: 5% auto; /* 减小上边距 */
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 600px;
+            max-height: 80vh; /* 限制最大高度 */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            overflow-y: auto; /* 添加内容区域的垂直滚动 */
+        }
+
+        .credential-result {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 4px;
+            word-break: break-all;
+            white-space: pre-wrap; /* 保留格式化和换行 */
+            font-family: monospace; /* 使用等宽字体以更好地显示JSON */
+            max-height: 60vh; /* 限制结果区域的最大高度 */
+            overflow-y: auto; /* 添加结果区域的垂直滚动 */
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 400px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+        }
+
+        .modal-button {
+            padding: 8px 20px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .confirm-button {
+            background-color: #F44336;
+            color: white;
+        }
+
+        .cancel-button {
+            background-color: #9e9e9e;
+            color: white;
+        }
+
+        /* 分页样式 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .pagination li {
+            display: inline-block;
+            margin: 0 5px;
+        }
+
+        .pagination a {
+            display: block;
+            padding: 8px 12px;
+            text-decoration: none;
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .pagination a:hover {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .pagination .active a {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+            cursor: default;
+        }
+
+        .pagination .disabled a {
+            color: #999;
+            border-color: #ddd;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+
+        /* 修改作者列样式 */
+        td.authors {
+            max-width: 250px;
+            white-space: normal;
+            line-height: 1.4;
+            font-size: 14px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        td.authors:hover {
+            overflow: visible;
+            white-space: normal;
+            background-color: #fff;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* 修改表格单元格样式 */
+        td {
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: normal;
+        }
+
+        /* 修改操作列样式 */
+        td:nth-child(9) {
+            white-space: nowrap;
+            text-align: center;
+            width: 200px;  /* 允许根据内容自动调整宽度 */
+            padding: 12px 8px;
+        }
+
+        /* 调整操作按钮之间的分隔符样式 */
+        .action-separator {
+            margin: 0 4px;
+            color: #ddd;
+            font-weight: 300;
+        }
+
+        .statistics-button {
+            padding: 8px 15px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .statistics-button:hover {
+            background-color: #1976D2;
+        }
+
+        /* 搜索框样式 */
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #f9f9f9;
+        }
+
+        /* 搜索模态框样式 */
+        .search-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .search-modal-content {
+            position: relative;
+            background-color: #fff;
+            margin: 10% auto;
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .search-section {
+            margin-bottom: 20px;
+        }
+
+        .search-section h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .radio-group, .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .radio-item, .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .search-modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .search-modal-button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .search-modal-button.confirm {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .search-modal-button.cancel {
+            background-color: #9e9e9e;
+            color: white;
+        }
+
+        .search-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .modal-search-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .modal-search-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+                /* 在现有的 style 标签中添加或更新以下样式 */
+        table {
+            width: 100%;
+            table-layout: fixed; /* 固定表格布局，使列宽设置更可靠 */
+        }
+        
+        th, td {
+            /* ...保持现有样式... */
+            word-wrap: break-word; /* 允许长文本换行 */
+            overflow-wrap: break-word;
+        }
+        
+        /* 信息编号列 - 较窄，通常是固定长度 */
+        th:nth-child(1), td:nth-child(1) {
+            width: 5%;
+        }
+        
+        /* 反馈日期列 - 固定格式，较窄 */
+        th:nth-child(2), td:nth-child(2) {
+            width: 6%;
+        }
+        
+        /* 反馈部门列 - 中等宽度 */
+        th:nth-child(3), td:nth-child(3) {
+            width: 8%;
+        }
+        
+        /* 报告题目列 - 较宽，通常内容较长 */
+        th:nth-child(4), td:nth-child(4) {
+            width: 35%;
+        }
+        
+        /* 作者列 - 适中宽度 */
+        th:nth-child(5), td:nth-child(5) {
+            width: 10%;
+        }
+        
+        /* 采纳级别列 - 较窄 */
+        th:nth-child(6), td:nth-child(6) {
+            width: 9%;
+        }
+        
+        /* 批示级别列 - 较窄 */
+        th:nth-child(7), td:nth-child(7) {
+            width: 9%;
+        }
+        
+        /* 备注列 - 中等宽度 */
+        th:nth-child(8), td:nth-child(8) {
+            width: 5%;
+        }
+        
+        /* 操作列 - 固定宽度 */
+        th:nth-child(9), td:nth-child(9) {
+            width: 13%;
+        }
+        
+        /* 优化长文本显示 */
+        td {
+            padding: 8px;
+            line-height: 1.4;
+            font-size: 14px;
+        }
+        
+    </style>
+</head>
+
+<body>
+    <h1>查询信息</h1>
+    <a href="/main/" class="home-button">返回主页</a>
+
+    <!-- 新的搜索框 -->
+    <div class="search-box">
+        <input type="text" class="search-input" placeholder="点击设置搜索条件..." readonly onclick="showSearchModal()">
+        <a href="/forms/statistic" class="statistics-button">统计分析</a>
+    </div>
+
+    <!-- 搜索条件模态框 -->
+    <div id="searchModal" class="search-modal">
+        <div class="search-modal-content">
+            <div class="search-section">
+                <h3>搜索类型与内容</h3>
+                <div class="search-input-group">
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="search_type" value="none" checked>
+                            无
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="search_type" value="unit">
+                            作者单位
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="search_type" value="author">
+                            作者姓名
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="search_type" value="title">
+                            文章标题
+                        </label>
+                    </div>
+                    <input type="text" id="searchQueryInput" class="modal-search-input" placeholder="请输入搜索关键词">
+                </div>
+            </div>
+
+            <div class="search-section">
+                <h3>采纳级别</h3>
+                <div class="checkbox-group" id="acceptLevels">
+                    <!-- 这里的选项将通过JavaScript动态填充 -->
+                     {% for val in standard_accept_levels %}
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="search_accept_level" value="{{val}}">
+                        {{val}}
+                    </label>
+                    {% endfor %}
+                    <!-- <label class="checkbox-item">
+                        <input type="checkbox" name="search_accept_level" value="其他">
+                    </label> -->
+                </div>
+            </div>
+
+            <div class="search-section">
+                <h3>批示级别</h3>
+                <div class="checkbox-group" id="instructionLevels">
+                    <!-- 这里的选项将通过JavaScript动态填充 -->
+                     {% for val in standard_instruction_levels %}
+                     <label class="checkbox-item">
+                        <input type="checkbox" name="search_instruction_level" value="{{val}}">
+                        {{val}}
+                    </label>
+                    {% endfor %}
+                    <!-- <label class="checkbox-item">
+                        <input type="checkbox" name="search_instruction_level" value="其他">
+                    </label> -->
+                </div>
+            </div>
+
+            <div class="search-section">
+                <h3>年份</h3>
+                <div class="checkbox-group">
+                    {% for year in standard_years %}
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="search_years" value="{{ year }}" 
+                            {% if year in selected_years %}checked{% endif %}> {{ year }}年
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="search-modal-buttons">
+                <button class="search-modal-button cancel" onclick="closeSearchModal()">取消</button>
+                <button class="search-modal-button confirm" onclick="submitSearch()">搜索</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据表格 -->
+    <table>
+        <thead>
+            <tr>
+                <th>信息编号</th>
+                <th>反馈日期</th>
+                <th>反馈部门</th>
+                <th>报告题目</th>
+                <th>作者</th>
+                <th>采纳级别</th>
+                <th>批示级别</th>
+                <th>备注</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data %}
+            <tr data-number="{{ item.number }}">
+                <td>{{ item.number }}</td>
+                <td>{{ item.feedback_date }}</td>
+                <td>{{ item.feedback_department }}</td>
+                <td>{{ item.title }}</td>
+                <td class="authors">
+                    {{ item.author }}
+                    {% if item.author_2 %}、{{ item.author_2 }}{% endif %}
+                    {% if item.author_3 %}、{{ item.author_3 }}{% endif %}
+                    {% if item.author_4 %}、{{ item.author_4 }}{% endif %}
+                    {% if item.author_5 %}、{{ item.author_5 }}{% endif %}
+                    {% if item.author_6 %}、{{ item.author_6 }}{% endif %}
+                    {% if item.author_7 %}、{{ item.author_7 }}{% endif %}
+                    {% if item.author_8 %}、{{ item.author_8 }}{% endif %}
+                    {% if item.author_9 %}、{{ item.author_9 }}{% endif %}
+                    {% if item.author_10 %}、{{ item.author_10 }}{% endif %}
+                </td>
+                <td>{{ item.accept_level }}</td>
+                <td>{{ item.instruction_level }}</td>
+                <td>{{ item.remark }}</td>
+                <td style="text-align: center;">
+                    <a href="#" class="action-link print" onclick="createCredential('{{ item.number }}', '{{ item.title }}', '{{ item.feedback_date }}', '{{item.instruction_level}}', '{{item.feedback_department}}', '{{item.accept_level}}', this.closest('tr').querySelector('.authors').textContent.trim())">存证</a>
+                    <span class="action-separator">|</span>
+                    <a href="{% url 'forms:edit' item.number %}?{{ request.GET.urlencode }}" class="action-link">修改</a>
+                    <span class="action-separator">|</span>
+                    <!-- <a href="#" class="action-link credential" onclick="createCredential('{{ item.number }}', '{{ item.title }}', '{{ item.feedback_date }}', '{{item.instruction_level}}', '{{item.feedback_department}}', '{{item.accept_level}}', this.closest('tr').querySelector('.authors').textContent.trim())">存证</a>
+                    <span class="action-separator">|</span> -->
+                    <!-- {% url 'forms:generate' item.number %} -->
+                    <a href="#" class="action-link delete">删除</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- TODO：完善分页逻辑 -->
+    <div class="pagination">
+        <ul>
+            {% if data.has_previous %}
+                <li><a href="?page=1&search_type={{ search_type }}&search_query={{ search_query }}&{% for year in search_years %}search_years={{ year }}&{% endfor %}search_accept_level={{search_accept_level}}&search_instruction_level={{search_instruction_level}}">&laquo; 首页</a></li>
+                <li><a href="?page={{ data.previous_page_number }}&search_type={{ search_type }}&search_query={{ search_query }}&{% for year in search_years %}search_years={{ year }}&{% endfor %}search_accept_level={{search_accept_level}}&search_instruction_level={{search_instruction_level}}">上一页</a></li>
+            {% else %}
+                <li class="disabled"><a>&laquo; 首页</a></li>
+                <li class="disabled"><a>上一页</a></li>
+            {% endif %}
+
+            {% for num in data.paginator.page_range %}
+                {% if data.number == num %}
+                    <li class="active"><a>{{ num }}</a></li>
+                {% elif num > data.number|add:'-3' and num < data.number|add:'3' %}
+                    <li><a href="?page={{ num }}&search_type={{ search_type }}&search_query={{ search_query }}&{% for year in search_years %}search_years={{ year }}&{% endfor %}search_accept_level={{search_accept_level}}&search_instruction_level={{search_instruction_level}}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if data.has_next %}
+                <li><a href="?page={{ data.next_page_number }}&search_type={{ search_type }}&search_query={{ search_query }}&{% for year in search_years %}search_years={{ year }}&{% endfor %}search_accept_level={{search_accept_level}}&search_instruction_level={{search_instruction_level}}">下一页</a></li>
+                <li><a href="?page={{ data.paginator.num_pages }}&search_type={{ search_type }}&search_query={{ search_query }}&{% for year in search_years %}search_years={{ year }}&{% endfor %}search_accept_level={{search_accept_level}}&search_instruction_level={{search_instruction_level}}">末页 &raquo;</a></li>
+            {% else %}
+                <li class="disabled"><a>下一页</a></li>
+                <li class="disabled"><a>末页 &raquo;</a></li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h3>确认删除</h3>
+            <p>您确定要删除这条记录吗？此操作不可撤销。</p>
+            <div class="modal-buttons">
+                <button class="modal-button cancel-button" onclick="closeModal()">取消</button>
+                <button class="modal-button confirm-button" onclick="confirmDelete()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 存证结果模态框 -->
+    <div id="credentialModal" class="credential-modal">
+        <div class="credential-modal-content">
+            <h3>存证结果</h3>
+            <div id="credentialResult" class="credential-result"></div>
+            <div class="modal-buttons">
+                <button class="modal-button confirm-button" onclick="printDoc()">打印</button>
+                <button class="modal-button cancel-button" onclick="closeCredentialModal()">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentNumber = '';
+
+        function showDeleteModal(number) {
+            currentNumber = number;
+            document.getElementById('deleteModal').style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        async function confirmDelete() {
+            if (currentNumber) {
+                try {
+                    const response = await fetch(`/forms/api/delete/${currentNumber}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        // 刷新页面或移除对应行
+                        const row = document.querySelector(`tr[data-number="${currentNumber}"]`);
+                        if (row) {
+                            row.remove();
+                        }
+                        closeModal();
+                    } else {
+                        alert('删除失败: ' + result.message);
+                    }
+                } catch (error) {
+                    alert('删除失败: ' + error.message);
+                }
+            }
+        }
+
+        // 更新删除链接的点击事件
+        document.addEventListener('DOMContentLoaded', function() {
+            let deleteLinks = document.querySelectorAll('.action-link.delete');
+            deleteLinks.forEach(link => {
+                link.onclick = function(e) {
+                    e.preventDefault();
+                    const number = this.closest('tr').getAttribute('data-number');
+                    showDeleteModal(number);
+                };
+            });
+        });
+
+        let selectedRecordNumber='';
+        function createCredential(number, title, date,instructionLevel,feedbackDepartment,acceptLevel,authors) {
+            selectedRecordNumber = number;
+            // 处理作者字符串：
+            // 1. 替换所有换行符和多余空格
+            // 2. 移除所有特殊符号（保留中文和英文字符）
+            // 3. 用顿号分隔
+            const cleanAuthors = authors
+                .replace(/[\n\r]+/g, '')  // 移除换行符
+                .replace(/\s+/g, '')     // 将多个空格替换为单个空格
+                .trim()                   // 移除首尾空格
+                .replace(/[、,;，；]/g, '、') // 统一分隔符为顿号
+                .replace(/、+/g, '、')     // 移除重复的顿号
+                .replace(/^、|、$/g, '');  // 移除首尾的顿号
+            
+            const data = {
+                claimData: {
+                    id: number,
+                    title: title,
+                    date: date,
+                    author: cleanAuthors,
+                    accept: acceptLevel,
+                    instruction: instructionLevel,
+                    department: feedbackDepartment
+                }
+            };
+
+            fetch('http://localhost:8081/createCredential', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('credentialResult').innerText = JSON.stringify(data, null, 2);
+                document.getElementById('credentialModal').style.display = 'block';
+            })
+            .catch(error => {
+                document.getElementById('credentialResult').innerText = '存证请求失败：' + error.message;
+                document.getElementById('credentialModal').style.display = 'block';
+            });
+        }
+
+        function closeCredentialModal() {
+            document.getElementById('credentialModal').style.display = 'none';
+        }
+
+        function printDoc() {
+            const url = `http://localhost:8000/forms/api/generate/${selectedRecordNumber}`;
+
+            console.log(url);
+
+            fetch(url)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('文档生成请求失败');
+                    }
+                    return response.blob();
+                })
+                .then(blob => {
+                    // 创建一个临时的URL来下载文件
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${selectedRecordNumber}_Proof.doc`; // 设置下载文件名
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                })
+                .catch(error => {
+                    alert('文档生成失败: ' + error.message);
+                });
+        }
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            let credentialModal = document.getElementById('credentialModal');
+            let deleteModal = document.getElementById('deleteModal');
+            if (event.target == credentialModal) {
+                closeCredentialModal();
+            }
+            if (event.target == deleteModal) {
+                closeModal();
+            }
+        }
+
+        // 搜索条件相关的变量
+        const acceptLevels = ['中办', '国办', '中央有关部门', '国家部委', '省级','市厅级'];
+        const instructionLevels = ['中央主要领导', '中央政治局常委', '中央政治局委员', '正部级领导','副部级领导','省级有关领导','市级主要领导','市有关领导','其他'];
+        let currentSearchFilters = {
+            type: 'unit',
+            accept: [],
+            instruction: [],
+            year: ''
+        };
+
+        function showSearchModal() {
+            document.getElementById('searchModal').style.display = 'block';
+        }
+
+        function closeSearchModal() {
+            document.getElementById('searchModal').style.display = 'none';
+        }
+
+        function applySearchFilters() {
+            // 获取所有选中的值
+            currentSearchFilters.type = document.querySelector('input[name="search_type"]:checked').value;
+            currentSearchFilters.accept = Array.from(document.querySelectorAll('input[name="search_accept_level"]:checked')).map(cb => cb.value);
+            currentSearchFilters.instruction = Array.from(document.querySelectorAll('input[name="search_instruction_level"]:checked')).map(cb => cb.value);
+            currentSearchFilters.year = document.getElementById('yearSelect').value;
+
+            // 更新搜索框显示
+            updateSearchDisplay();
+            closeSearchModal();
+        }
+
+        function updateSearchDisplay() {
+            const searchInput = document.querySelector('.search-input');
+            let displayText = [];
+
+            const searchQuery = document.getElementById('searchQueryInput').value;
+            const searchType = document.querySelector('input[name="search_type"]:checked').value;
+            if (searchQuery && searchType !== 'none') {
+                displayText.push(`搜索: ${searchType === 'unit' ? '单位' : '作者'}-${searchQuery}`);
+            }
+            
+            if (currentSearchFilters.accept.length) {
+                displayText.push(`采纳级别: ${currentSearchFilters.accept.join('、')}`);
+            }
+            if (currentSearchFilters.instruction.length) {
+                displayText.push(`批示级别: ${currentSearchFilters.instruction.join('、')}`);
+            }
+            if (currentSearchFilters.year) {
+                displayText.push(`年份: ${currentSearchFilters.year}年`);
+            }
+
+            searchInput.value = displayText.join(' | ') || '点击设置搜索条件...';
+        }
+
+        function submitSearch() {
+            let params = new URLSearchParams();
+            
+            // 获取搜索关键词和类型
+            const searchQuery = document.getElementById('searchQueryInput').value;
+            const searchType = document.querySelector('input[name="search_type"]:checked').value;
+            
+            // 只有当搜索类型不是"无"时才添加搜索参数
+            if (searchType !== 'none' && searchQuery) {
+                params.append('search_type', searchType);
+                params.append('search_query', searchQuery);
+            }
+            
+            // 获取选中的年份
+            const selectedYears = Array.from(document.querySelectorAll('input[name="search_years"]:checked')).map(cb => cb.value);
+            selectedYears.forEach(year => {
+                params.append('search_years', year);
+            });
+            
+            // 获取其他搜索条件
+            const acceptLevels = Array.from(document.querySelectorAll('input[name="search_accept_level"]:checked')).map(cb => cb.value);
+            if (acceptLevels.length) {
+                params.append('search_accept_level', acceptLevels.join('、'));
+            }
+            
+            const instructionLevels = Array.from(document.querySelectorAll('input[name="search_instruction_level"]:checked')).map(cb => cb.value);
+            if (instructionLevels.length) {
+                params.append('search_instruction_level', instructionLevels.join('、'));
+            }
+
+            window.location.href = `?${params.toString()}`;
+        }
+
+    </script>
+</body>
+
+</html>

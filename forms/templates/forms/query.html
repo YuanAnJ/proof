@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>查询信息</title>
+    <style>
+        body {
+            background-color: #f5f5f5;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            background-color: #ffffff;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+        }
+
+        td {
+            border: 1px solid #e8e8e8;
+            text-align: left;
+            font-size: 14px;  /* 修改默认字体大小为14px */
+            background-color: #ffffff;
+            word-wrap: break-word; /* 允许长文本换行 */
+            overflow-wrap: break-word;
+            padding: 8px;
+            line-height: 1.4;
+        }
+
+        th {
+            border: 1px solid #e8e8e8;
+            padding: 12px 15px;
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+            font-size: 14px;
+            word-wrap: break-word; /* 允许长文本换行 */
+            overflow-wrap: break-word;
+        }
+
+        tr:hover td {
+            background-color: #f9f9f9;
+        }
+
+        td:nth-child(10) {
+            white-space: nowrap;
+            text-align: center;
+            width: 100px;  /* 减小宽度 */
+            padding: 12px 8px;  /* 减小内边距 */
+        }
+
+        .search-button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        .home-button {
+            position: fixed;
+            top: 20px;
+            right: 10px;
+            padding: 10px 20px;
+            background: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: .3s;
+        }
+
+
+        .home-button:hover {
+            background-color: #1976D2;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .action-link {
+            display: inline-block;
+            padding: 4px 6px;  /* 减小内边距 */
+            border-radius: 3px;
+            transition: all 0.3s ease;
+            color: #2196F3;
+            text-decoration: none;
+            margin: 0 1px;  /* 减小按钮之间的间距 */
+            font-size: 13px;  /* 略微调小操作按钮字体 */
+        }
+
+        .action-link:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            color: #0D47A1;
+            text-decoration: underline;
+        }
+
+        .action-link.print {
+            color: white;
+            background-color: #4CAF50;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .action-link.print:before {
+            content: "🖨️";
+            margin-right: 4px;
+            font-size: 14px;
+        }
+
+        .action-link.print:hover {
+            color: white;
+            background-color: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .action-link.delete {
+            color: #F44336;
+        }
+
+        .action-link.delete:hover {
+            color: #C62828;
+        }
+
+        /* 模态框样式 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .modal-content {
+            position: relative;
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 400px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .modal-buttons {
+            margin-top: 20px;
+        }
+
+        .modal-button {
+            padding: 8px 20px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .confirm-button {
+            background-color: #F44336;
+            color: white;
+        }
+
+        .cancel-button {
+            background-color: #9e9e9e;
+            color: white;
+        }
+
+        /* 分页样式 */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .pagination li {
+            display: inline-block;
+            margin: 0 5px;
+        }
+
+        .pagination a {
+            display: block;
+            padding: 8px 12px;
+            text-decoration: none;
+            color: #4CAF50;
+            border: 1px solid #4CAF50;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .pagination a:hover {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .pagination .active a {
+            background-color: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+            cursor: default;
+        }
+
+        .pagination .disabled a {
+            color: #999;
+            border-color: #ddd;
+            pointer-events: none;
+            cursor: not-allowed;
+        }
+
+        /* 调整操作按钮之间的分隔符样式 */
+        .action-separator {
+            margin: 0 4px;
+            color: #ddd;
+            font-weight: 300;
+        }
+
+        .statistics-button {
+            padding: 8px 15px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background-color 0.3s;
+        }
+
+        .statistics-button:hover {
+            background-color: #1976D2;
+        }
+
+        /* 搜索框样式 */
+        .search-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #f9f9f9;
+        }
+
+        /* 搜索模态框样式 */
+        .search-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .search-modal-content {
+            position: relative;
+            background-color: #fff;
+            margin: 10% auto; /* 水平居中 */
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-height: none;
+        }
+
+        .search-section {
+            margin-bottom: 20px;
+        }
+
+        .search-section h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .radio-group, .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .radio-item, .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .search-modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .search-modal-button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .search-modal-button.confirm {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .search-modal-button.cancel {
+            background-color: #9e9e9e;
+            color: white;
+        }
+
+        .search-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .modal-search-input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-top: 10px;
+            box-sizing: border-box;
+        }
+
+        .modal-search-input:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+        }
+
+        table {
+            width: 100%;
+            table-layout: fixed; /* 固定表格布局，使列宽设置更可靠 */
+        }
+        
+        /* 信息编号列 - 较窄，通常是固定长度 */
+        th:nth-child(1), td:nth-child(1) {
+            width: 6%;
+        }
+        
+        /* 反馈日期列 - 固定格式，较窄 */
+        th:nth-child(2), td:nth-child(2) {
+            width: 7%;
+        }
+        
+        /* 反馈部门列 - 中等宽度 */
+        th:nth-child(3), td:nth-child(3) {
+            width: 5%;
+        }
+        
+        /* 报告题目列 - 较宽，通常内容较长 */
+        th:nth-child(4), td:nth-child(4) {
+            width: 32%;
+        }
+        
+        /* 作者列 - 适中宽度 */
+        th:nth-child(5), td:nth-child(5) {
+            width: 9%;
+        }
+        
+        /* 采纳级别列 - 较窄 */
+        th:nth-child(6), td:nth-child(6) {
+            width: 9%;
+        }
+        
+        /* 批示级别列 - 较窄 */
+        th:nth-child(7), td:nth-child(7) {
+            width: 7%;
+        }
+        
+        /* 备注列 - 中等宽度 */
+        th:nth-child(8), td:nth-child(8) {
+            width: 12%;
+        }
+        
+        /* 操作列 - 固定宽度 */
+        th:nth-child(9), td:nth-child(9) {
+            width: 13%;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>查询信息</h1>
+    <a href="/main/" class="home-button">返回主页</a>
+
+    <!-- 新的搜索框 -->
+    <div class="search-box">
+        <input type="text" class="search-input" placeholder="点击设置搜索条件..." readonly onclick="showSearchModal()">
+        <a href="/forms/statistic" class="statistics-button">统计分析</a>
+    </div>
+
+    <!-- 搜索条件模态框 -->
+    <div id="searchModal" class="search-modal">
+        <div class="search-modal-content">
+            <div class="search-section">
+                <h3>搜索类型</h3>
+                <div class="search-input-group">
+                    <div class="radio-group">
+                        <label class="radio-item">
+                            <input type="radio" name="search_type" value="none" checked>
+                            无
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="search_type" value="number">
+                            信息编号
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="search_type" value="unit">
+                            作者单位
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="search_type" value="author">
+                            作者姓名
+                        </label>
+                        <label class="radio-item">
+                            <input type="radio" name="search_type" value="title">
+                            文章标题
+                        </label>
+                        <label for="" class="radio-item">
+                            <input type="radio" name="search_type" value="feedback_department">
+                            反馈部门
+                        </label>
+                    </div>
+                    <input type="text" id="searchQueryInput" class="modal-search-input" placeholder="请输入搜索关键词">
+                </div>
+            </div>
+            <h3>搜索条件</h3>
+            <div class="search-section">
+                <h4>采纳级别</h4>
+                <div class="checkbox-group" id="acceptLevels">
+                    <!-- 这里的选项将通过JavaScript动态填充 -->
+                     {% for val in standard_accept_levels %}
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="search_accept_level" value="{{val}}">
+                        {{val}}
+                    </label>
+                    {% endfor %}
+                    <!-- <label class="checkbox-item">
+                        <input type="checkbox" name="search_accept_level" value="其他">
+                    </label> -->
+                </div>
+            </div>
+
+            <div class="search-section">
+                <h4>批示级别</h4>
+                <div class="checkbox-group" id="instructionLevels">
+                    <!-- 这里的选项将通过JavaScript动态填充 -->
+                     {% for val in standard_instruction_levels %}
+                     <label class="checkbox-item">
+                        <input type="checkbox" name="search_instruction_level" value="{{val}}">
+                        {{val}}
+                    </label>
+                    {% endfor %}
+                    <!-- <label class="checkbox-item">
+                        <input type="checkbox" name="search_instruction_level" value="其他">
+                    </label> -->
+                </div>
+            </div>
+
+            <div class="search-section">
+                <h4>年份</h4>
+                <div class="checkbox-group">
+                    {% for year in standard_years %}
+                    <label class="checkbox-item">
+                        <input type="checkbox" name="search_years" value="{{ year }}" 
+                            {% if year in selected_years %}checked{% endif %}> {{ year }}年
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="search-modal-buttons">
+                <button class="search-modal-button cancel" onclick="closeSearchModal()">取消</button>
+                <button class="search-modal-button confirm" onclick="submitSearch()">搜索</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 数据表格 -->
+    <table>
+        <thead>
+            <tr>
+                <th>信息编号</th>
+                <th>反馈日期</th>
+                <th>反馈部门</th>
+                <th>报告题目</th>
+                <th>作者</th>
+                <th>采纳级别</th>
+                <th>批示级别</th>
+                <th>备注</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in data %}
+            <tr data-number="{{ item.number }}">
+                <td>{{ item.number }}</td>
+                <td>{{ item.feedback_date }}</td>
+                <td>{{ item.feedback_department }}</td>
+                <td>{{ item.title }}</td>
+                <td class="authors">
+                    {{ item.author }}
+                    {% if item.author_2 %}、{{ item.author_2 }}{% endif %}
+                    {% if item.author_3 %}、{{ item.author_3 }}{% endif %}
+                    {% if item.author_4 %}、{{ item.author_4 }}{% endif %}
+                    {% if item.author_5 %}、{{ item.author_5 }}{% endif %}
+                    {% if item.author_6 %}、{{ item.author_6 }}{% endif %}
+                    {% if item.author_7 %}、{{ item.author_7 }}{% endif %}
+                    {% if item.author_8 %}、{{ item.author_8 }}{% endif %}
+                    {% if item.author_9 %}、{{ item.author_9 }}{% endif %}
+                    {% if item.author_10 %}、{{ item.author_10 }}{% endif %}
+                </td>
+                <td>{{ item.accept_level }}</td>
+                <td>{{ item.instruction_level }}</td>
+                <td>{{ item.remark }}</td>
+                <td style="text-align: center;">
+                    <a href="{% url 'forms:generate' item.number %}" class="action-link print">打印</a>
+                    <span class="action-separator">|</span>
+                    <a href="{% url 'forms:edit' item.number %}?{{ request.GET.urlencode }}" class="action-link">修改</a>
+                    <span class="action-separator">|</span>
+                    <a href="#" class="action-link delete">删除</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- TODO：完善分页逻辑 -->
+    <div class="pagination">
+        <ul>
+            {% if data.has_previous %}
+                <li><a href="?page=1&search_type={{ search_type }}&search_query={{ search_query }}&{% for year in search_years %}search_years={{ year }}&{% endfor %}search_accept_level={{search_accept_level}}&search_instruction_level={{search_instruction_level}}">&laquo; 首页</a></li>
+                <li><a href="?page={{ data.previous_page_number }}&search_type={{ search_type }}&search_query={{ search_query }}&{% for year in search_years %}search_years={{ year }}&{% endfor %}search_accept_level={{search_accept_level}}&search_instruction_level={{search_instruction_level}}">上一页</a></li>
+            {% else %}
+                <li class="disabled"><a>&laquo; 首页</a></li>
+                <li class="disabled"><a>上一页</a></li>
+            {% endif %}
+
+            {% for num in data.paginator.page_range %}
+                {% if data.number == num %}
+                    <li class="active"><a>{{ num }}</a></li>
+                {% elif num > data.number|add:'-3' and num < data.number|add:'3' %}
+                    <li><a href="?page={{ num }}&search_type={{ search_type }}&search_query={{ search_query }}&{% for year in search_years %}search_years={{ year }}&{% endfor %}search_accept_level={{search_accept_level}}&search_instruction_level={{search_instruction_level}}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if data.has_next %}
+                <li><a href="?page={{ data.next_page_number }}&search_type={{ search_type }}&search_query={{ search_query }}&{% for year in search_years %}search_years={{ year }}&{% endfor %}search_accept_level={{search_accept_level}}&search_instruction_level={{search_instruction_level}}">下一页</a></li>
+                <li><a href="?page={{ data.paginator.num_pages }}&search_type={{ search_type }}&search_query={{ search_query }}&{% for year in search_years %}search_years={{ year }}&{% endfor %}search_accept_level={{search_accept_level}}&search_instruction_level={{search_instruction_level}}">末页 &raquo;</a></li>
+            {% else %}
+                <li class="disabled"><a>下一页</a></li>
+                <li class="disabled"><a>末页 &raquo;</a></li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <!-- 删除确认模态框 -->
+    <div id="deleteModal" class="modal">
+        <div class="modal-content">
+            <h3>确认删除</h3>
+            <p>您确定要删除这条记录吗？此操作不可撤销。</p>
+            <div class="modal-buttons">
+                <button class="modal-button cancel-button" onclick="closeModal()">取消</button>
+                <button class="modal-button confirm-button" onclick="confirmDelete()">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentNumber = '';
+
+        function showDeleteModal(number) {
+            currentNumber = number;
+            document.getElementById('deleteModal').style.display = 'block';
+        }
+
+        async function confirmDelete() {
+            if (currentNumber) {
+                try {
+                    const response = await fetch(`/forms/api/delete/${currentNumber}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.status === 'success') {
+                        // 刷新页面或移除对应行
+                        const row = document.querySelector(`tr[data-number="${currentNumber}"]`);
+                        if (row) {
+                            row.remove();
+                        }
+                        closeModal();
+                    } else {
+                        alert('删除失败: ' + result.message);
+                    }
+                } catch (error) {
+                    alert('删除失败: ' + error.message);
+                }
+            }
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+
+        // 更新删除链接的点击事件
+        document.addEventListener('DOMContentLoaded', function() {
+            let deleteLinks = document.querySelectorAll('.action-link.delete');
+            deleteLinks.forEach(link => {
+                link.onclick = function(e) {
+                    e.preventDefault();
+                    const number = this.closest('tr').getAttribute('data-number');
+                    showDeleteModal(number);
+                };
+            });
+
+            initSearchDisplay(); // 初始化搜索条件显示
+        });
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            // let credentialModal = document.getElementById('credentialModal');
+            let deleteModal = document.getElementById('deleteModal');
+            let searchModal = document.getElementById('searchModal');
+            if (event.target == deleteModal) {
+                closeDeleteModal();
+            }
+            if (event.target == searchModal) {
+                closeSearchModal();
+            }
+        }
+
+        function showSearchModal() {
+            document.getElementById('searchModal').style.display = 'block';
+        }
+
+        function closeSearchModal() {
+            document.getElementById('searchModal').style.display = 'none';
+        }
+
+        function initSearchDisplay() {
+            const params = new URLSearchParams(window.location.search);
+            const searchInput = document.querySelector('.search-input');
+            let displayText = [];
+
+            const searchType = params.get('search_type');
+            const searchQuery = params.get('search_query');
+
+            if (searchQuery && searchType && searchType !== 'none') {
+                const typeLabels = {
+                    unit: '单位',
+                    author: '作者',
+                    title: '标题',
+                    feedback_department: '反馈部门',
+                    number: '编号'
+                };
+                const label = typeLabels[searchType] || searchType;
+                displayText.push(`搜索: ${label}：${searchQuery}`);
+            }
+
+            const searchYears = params.getAll('search_years');
+            if (searchYears.length) {
+                displayText.push(`年份: ${searchYears.join(', ')}年`);
+            }
+
+            const searchAcceptLevel = params.get('search_accept_level');
+            if (searchAcceptLevel) {
+                displayText.push(`采纳级别：${searchAcceptLevel}`);
+            }
+
+            const searchInstructionLevel = params.get('search_instruction_level');
+            if (searchInstructionLevel) {
+                displayText.push(`批示级别：${searchInstructionLevel}`);
+            }
+
+            searchInput.value = displayText.join(' | ') || '点击设置搜索条件...';
+        }
+
+        function submitSearch() {
+            let params = new URLSearchParams();
+            
+            // 获取搜索关键词和类型
+            const searchQuery = document.getElementById('searchQueryInput').value;
+            const searchType = document.querySelector('input[name="search_type"]:checked').value;
+            
+            // 只有当搜索类型不是"无"时才添加搜索参数
+            if (searchType !== 'none' && searchQuery) {
+                params.append('search_type', searchType);
+                params.append('search_query', searchQuery);
+            }
+            
+            // 获取选中的年份
+            const selectedYears = Array.from(document.querySelectorAll('input[name="search_years"]:checked')).map(cb => cb.value);
+            selectedYears.forEach(year => {
+                params.append('search_years', year);
+            });
+            
+            // 获取其他搜索条件
+            const acceptLevels = Array.from(document.querySelectorAll('input[name="search_accept_level"]:checked')).map(cb => cb.value);
+            if (acceptLevels.length) {
+                params.append('search_accept_level', acceptLevels.join('、'));
+            }
+            
+            const instructionLevels = Array.from(document.querySelectorAll('input[name="search_instruction_level"]:checked')).map(cb => cb.value);
+            if (instructionLevels.length) {
+                params.append('search_instruction_level', instructionLevels.join('、'));
+            }
+
+            window.location.href = `?${params.toString()}`;
+            console.log('搜索参数:', params);
+            
+            updateSearchDisplay(); // 更新搜索条件显示
+        }
+
+    </script>
+</body>
+
+</html>

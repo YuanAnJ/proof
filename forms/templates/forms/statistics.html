@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>统计分析</title>
+    <style>
+        body {
+            background-color: #f5f5f5;
+        }
+
+        .container {
+            margin: 0px;
+        }
+
+        .filter-form {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        .filter-form select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-width: 120px;
+        }
+
+        .filter-form button {
+            padding: 8px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 25px 0;
+            background-color: #ffffff;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+        }
+
+        th, td {
+            border: 1px solid #e8e8e8;
+            padding: 12px 15px;
+            text-align: left;
+            font-size: 14px;
+            background-color: #ffffff;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 500;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f8f8;
+        }
+
+        tr:hover {
+            background-color: #f9f9f9;
+            transition: background-color 0.2s ease;
+        }
+
+        tr:hover td {
+            background-color: #f9f9f9;
+        }
+
+        .home-button {
+            position: fixed;
+            top: 20px;
+            right: 10px;
+            padding: 10px 20px;
+            background: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: .3s;
+        }
+
+        .home-button:hover {
+            background-color: #1976D2;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .stats-section {
+            margin: 25px 0;
+            background-color: #ffffff;
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+            padding: 20px;
+            border-radius: 5px;
+        }
+
+        .stats-section h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #4CAF50;
+            font-size: 18px;
+        }
+
+        .chart-container {
+            margin-top: 20px;
+            height: 400px;
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .detail-table th[colspan] {
+            background-color: #2196F3;
+            padding: 12px;
+            font-size: 16px;
+            text-transform: none;
+        }
+
+        .sort-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0 5px;
+            color: white;
+        }
+        
+        .sort-btn:hover {
+            opacity: 0.8;
+        }
+        
+        .sort-btn.active {
+            color: #ffeb3b;
+        }
+
+        /* 导航栏样式 */
+        .nav-container {
+            background: white;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        
+        .nav-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .nav-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .nav-title {
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+
+        .nav-link {
+            color: #2196F3;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: 0.3s;
+        }
+        
+        .nav-link:hover {
+            background: #e3f2fd;
+            color: #1976D2;
+        }
+        
+        /* 返回顶部按钮样式 */
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            font-size: 20px;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: 0.3s;
+        }
+        
+        .back-to-top:hover {
+            background: #1976D2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+        
+        .back-to-top.visible {
+            display: flex;
+        }
+
+        .total-row {
+            background-color: #f0f8ff !important;
+            font-weight: bold;
+        }
+
+        .total-row td {
+            border-top: 2px solid #4CAF50 !important;
+        }
+
+    </style>
+</head>
+<body>
+    {% load custom_filters %}
+    <div class="container">
+        <a href="/forms/query" class="home-button">返回查询</a>
+        <h1>统计分析</h1>
+        
+        <form class="filter-form" method="GET">
+            <div class="year-checkboxes">
+                <label>选择年份：</label>
+                {% for year in standard_years %}
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="selected_years" value="{{ year }}" 
+                            {% if year in selected_years %}checked{% endif %}> {{ year }}年
+                    </label>
+                {% endfor %}
+            </div>
+            <button type="submit">生成统计</button>
+        </form>
+
+        <style>
+            .year-checkboxes {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                align-items: center;
+                padding: 10px;
+            }
+            .checkbox-label {
+                display: flex;
+                align-items: center;
+                gap: 4px;
+                cursor: pointer;
+            }
+            .checkbox-label input[type="checkbox"] {
+                cursor: pointer;
+            }
+        </style>
+
+        <!-- 在年份选择栏下方添加导航栏 -->
+        <div class="nav-container">
+            <div class="nav-row">
+                <span class="nav-title">年度统计：</span>
+                <a href="#accept-total" class="nav-link">采纳情况年度统计</a>
+                <a href="#instruction-total" class="nav-link">批示情况年度统计</a>
+            </div>
+            <div class="nav-row">
+                <span class="nav-title">采纳级别：</span>
+                <a href="#accept-中办" class="nav-link">中办</a>
+                <a href="#accept-国办" class="nav-link">国办</a>
+                <a href="#accept-中央有关部门" class="nav-link">中央有关部门</a>
+                <a href="#accept-国家部委" class="nav-link">国家部委</a>
+                <a href="#accept-省级" class="nav-link">省级</a>
+                <a href="#accept-市厅级" class="nav-link">市厅级</a>
+            </div>
+            <div class="nav-row">
+                <span class="nav-title">批示级别：</span>
+                <a href="#instruction-中央主要领导" class="nav-link">中央主要领导</a>
+                <a href="#instruction-中央政治局常委" class="nav-link">中央政治局常委</a>
+                <a href="#instruction-中央政治局委员" class="nav-link">中央政治局委员</a>
+                <a href="#instruction-中央有关领导" class="nav-link">中央有关领导</a>
+                <a href="#instruction-正部级领导" class="nav-link">正部级领导</a>
+                <a href="#instruction-副部级领导" class="nav-link">副部级领导</a>
+                <a href="#instruction-省级有关领导" class="nav-link">省级有关领导</a>
+                <a href="#instruction-市级主要领导" class="nav-link">市级主要领导</a>
+                <a href="#instruction-市有关领导" class="nav-link">市有关领导</a>
+            </div>
+        </div>
+
+        <!-- 采纳级别年度统计表 -->
+        <div id="accept-total" class="stats-section">
+            <h2>采纳情况年度统计</h2>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>单位</th>
+                        {% for year in years %}
+                            <th>{{ year }}年<button class="sort-btn" onclick="sortTable(this, 'desc')">▼</button></th>
+                        {% endfor %}
+                        <th>
+                            单位总计
+                            <button class="sort-btn" onclick="sortTable(this, 'desc')">▼</button>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, data in stats.items %}
+                        <tr>
+                            <td>{{ name }}</td>
+                            {% for year in years %}
+                                {% with year_total=0 %}
+                                    {% if data.accept_data.total_by_year %}
+                                        <td>{{ data.accept_data.total_by_year|get_item:year|default:"0" }}</td>
+                                    {% else %}
+                                        <td>0</td>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endfor %}
+                            <td>{{ data.accept_data.total|default:"0" }}</td>
+                        </tr>
+                    {% endfor %}
+                    <!-- 添加总计行 -->
+                    <tr class="total-row">
+                        <td><strong>年份总计</strong></td>
+                        {% for year in years %}
+                            <td><strong>{{ total_stats.accept_data.total_by_year|get_item:year|default:"0" }}</strong></td>
+                        {% endfor %}
+                        <td><strong>{{ total_stats.accept_data.total }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div id="acceptTotalChart" class="chart-container"></div>
+        </div>
+
+        <!-- 批示级别年度统计表 -->
+        <div id="instruction-total" class="stats-section">
+            <h2>批示情况年度统计</h2>
+            <table class="stats-table">
+                <thead>
+                    <tr>
+                        <th>单位</th>
+                        {% for year in years %}
+                            <th>{{ year }}年<button class="sort-btn" onclick="sortTable(this, 'desc')">▼</button></th>
+                        {% endfor %}
+                        <th>
+                            单位总计
+                            <button class="sort-btn" onclick="sortTable(this, 'desc')">▼</button>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for name, data in stats.items %}
+                        <tr>
+                            <td>{{ name }}</td>
+                            {% for year in years %}
+                                {% with year_total=0 %}
+                                    {% if data.instruction_data.total_by_year %}
+                                        <td>{{ data.instruction_data.total_by_year|get_item:year|default:"0" }}</td>
+                                    {% else %}
+                                        <td>0</td>
+                                    {% endif %}
+                                {% endwith %}
+                            {% endfor %}
+                            <td>{{ data.instruction_data.total|default:"0" }}</td>
+                        </tr>
+                    {% endfor %}
+                    <!-- 添加总计行 -->
+                    <tr class="total-row">
+                        <td><strong>年份总计</strong></td>
+                        {% for year in years %}
+                            <td><strong>{{ total_stats.instruction_data.total_by_year|get_item:year|default:"0" }}</strong></td>
+                        {% endfor %}
+                        <td><strong>{{ total_stats.instruction_data.total }}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            <div id="instructionTotalChart" class="chart-container"></div>
+        </div>
+
+        <!-- 采纳级别统计 -->
+        <div class="stats-section">
+            <h2>具体采纳情况统计</h2>
+            {% for level in accept_levels %}
+            <div class="stats-section" id="accept-{{ level }}">
+                <table class="detail-table">
+                    <thead>
+                        <tr>
+                            <th colspan="{{ years|length|add:2 }}">{{ level }}</th>
+                        </tr>
+                        <tr>
+                            <th>单位</th>
+                            {% for year in years %}
+                                <th>{{ year }}年<button class="sort-btn" onclick="sortTable(this, 'desc')">▼</button></th>
+                            {% endfor %}
+                            <th>
+                                单位总计
+                                <button class="sort-btn" onclick="sortTable(this, 'desc')">▼</button>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for name, data in stats.items %}
+                            <tr>
+                                <td>{{ name }}</td>
+                                {% for year in years %}
+                                    <td>{{ data.accept_data|get_item:level|get_item:"years"|get_item:year|default:"0" }}</td>
+                                {% endfor %}
+                                <td>{{ data.accept_data|get_item:level|get_item:"total" }}</td>
+                            </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td><strong>年份总计</strong></td>
+                            {% for year in years %}
+                                <td><strong>{{ total_stats.accept_data|get_item:level|get_item:"years"|get_item:year|default:"0" }}</strong></td>
+                            {% endfor %}
+                            <td><strong>{{ total_stats.accept_data|get_item:level|get_item:"total" }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="acceptChart_{{ forloop.counter }}" class="chart-container"></div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- 批示级别统计 -->
+        <div class="stats-section">
+            <h2>具体批示情况统计</h2>
+            {% for level in instruction_levels %}
+            <div class="stats-section" id="instruction-{{ level }}">
+                <table class="detail-table">
+                    <thead>
+                        <tr>
+                            <th colspan="{{ years|length|add:2 }}">{{ level }}</th>
+                        </tr>
+                        <tr>
+                            <th>单位</th>
+                            {% for year in years %}
+                                <th>{{ year }}年<button class="sort-btn" onclick="sortTable(this, 'desc')">▼</button></th>
+                            {% endfor %}
+                            <th>
+                                单位总计
+                                <button class="sort-btn" onclick="sortTable(this, 'desc')">▼</button>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for name, data in stats.items %}
+                            <tr>
+                                <td>{{ name }}</td>
+                                {% for year in years %}
+                                    <td>{{ data.instruction_data|get_item:level|get_item:"years"|get_item:year|default:"0" }}</td>
+                                {% endfor %}
+                                <td>{{ data.instruction_data|get_item:level|get_item:"total" }}</td>
+                            </tr>
+                        {% endfor %}
+                        <tr class="total-row">
+                            <td><strong>年份总计</strong></td>
+                            {% for year in years %}
+                                <td><strong>{{ total_stats.instruction_data|get_item:level|get_item:"years"|get_item:year|default:"0" }}</strong></td>
+                            {% endfor %}
+                            <td><strong>{{ total_stats.instruction_data|get_item:level|get_item:"total" }}</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div id="instructionChart_{{ forloop.counter }}" class="chart-container"></div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div id="chart" class="chart-container"></div>
+    </div>
+
+    <!-- 添加返回顶部按钮 -->
+    <button class="back-to-top">↑</button>
+
+    <script src="/static/forms/echarts.min.js"></script>
+    <script>
+        var stats = {{ stats|safe }};
+        var years = {{ years|safe }};
+        var accept_levels = {{ accept_levels|safe }};
+        var instruction_levels = {{ instruction_levels|safe }};
+
+        // 创建并配置采纳级别年度统计图表
+        var acceptTotalChart = echarts.init(document.getElementById('acceptTotalChart'));
+        var acceptTotalSeries = [];
+        for (var name in stats) {
+            var acceptData = [];
+            years.forEach(function(year) {
+                var total = 0;
+                accept_levels.forEach(function(level) {
+                    if (stats[name].accept_data[level].years[year]) {
+                        total += stats[name].accept_data[level].years[year];
+                    }
+                });
+                acceptData.push(total);
+            });
+            acceptTotalSeries.push({
+                name: name,
+                type: 'bar',
+                data: acceptData
+            });
+        }
+
+        acceptTotalChart.setOption({
+            title: { text: '采纳情况年度统计' },
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { type: 'scroll', orient: 'vertical', right: 10, top: 20 },
+            grid: { left: '3%', right: '20%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'category', data: years.map(y => y + '年') },
+            yAxis: { type: 'value' },
+            series: acceptTotalSeries
+        });
+
+        // 创建并配置批示级别年度统计图表
+        var instructionTotalChart = echarts.init(document.getElementById('instructionTotalChart'));
+        var instructionTotalSeries = [];
+        for (var name in stats) {
+            var instructionData = [];
+            years.forEach(function(year) {
+                var total = 0;
+                instruction_levels.forEach(function(level) {
+                    if (stats[name].instruction_data[level].years[year]) {
+                        total += stats[name].instruction_data[level].years[year];
+                    }
+                });
+                instructionData.push(total);
+            });
+            instructionTotalSeries.push({
+                name: name,
+                type: 'bar',
+                data: instructionData
+            });
+        }
+
+        instructionTotalChart.setOption({
+            title: { text: '批示情况年度统计' },
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { type: 'scroll', orient: 'vertical', right: 10, top: 20 },
+            grid: { left: '3%', right: '20%', bottom: '3%', containLabel: true },
+            xAxis: { type: 'category', data: years.map(y => y + '年') },
+            yAxis: { type: 'value' },
+            series: instructionTotalSeries
+        });
+
+        // 为每个具体的采纳级别创建图表
+        accept_levels.forEach(function(level, index) {
+            var chartId = 'acceptChart_' + (index + 1);
+            var chart = echarts.init(document.getElementById(chartId));
+            var series = [];
+            for (var name in stats) {
+                var data = [];
+                years.forEach(function(year) {
+                    data.push(stats[name].accept_data[level].years[year] || 0);
+                });
+                series.push({
+                    name: name,
+                    type: 'bar',
+                    data: data
+                });
+            }
+            chart.setOption({
+                title: { text: level + '采纳情况统计' },
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                legend: { type: 'scroll', orient: 'vertical', right: 10, top: 20 },
+                grid: { left: '3%', right: '20%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'category', data: years.map(y => y + '年') },
+                yAxis: { type: 'value' },
+                series: series
+            });
+        });
+
+        // 为每个具体的批示级别创建图表
+        instruction_levels.forEach(function(level, index) {
+            var chartId = 'instructionChart_' + (index + 1);
+            var chart = echarts.init(document.getElementById(chartId));
+            var series = [];
+            for (var name in stats) {
+                var data = [];
+                years.forEach(function(year) {
+                    data.push(stats[name].instruction_data[level].years[year] || 0);
+                });
+                series.push({
+                    name: name,
+                    type: 'bar',
+                    data: data
+                });
+            }
+            chart.setOption({
+                title: { text: level + '批示情况统计' },
+                tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+                legend: { type: 'scroll', orient: 'vertical', right: 10, top: 20 },
+                grid: { left: '3%', right: '20%', bottom: '3%', containLabel: true },
+                xAxis: { type: 'category', data: years.map(y => y + '年') },
+                yAxis: { type: 'value' },
+                series: series
+            });
+        });
+
+        // 监听窗口大小变化，调整所有图表大小
+        window.addEventListener('resize', function() {
+            acceptTotalChart.resize();
+            instructionTotalChart.resize();
+            accept_levels.forEach(function(_, index) {
+                echarts.getInstanceById('acceptChart_' + (index + 1)).resize();
+            });
+            instruction_levels.forEach(function(_, index) {
+                echarts.getInstanceById('instructionChart_' + (index + 1)).resize();
+            });
+        });
+
+        function sortTable(button, initialOrder = 'desc') {
+    const table = button.closest('table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr:not(.total-row)')); // 排除总计行
+    const totalRow = tbody.querySelector('.total-row'); // 获取总计行
+    const columnIndex = button.closest('th').cellIndex;
+    const currentOrder = button.getAttribute('data-order') || initialOrder;
+    
+    // 重置同一表格中所有按钮的样式
+    table.querySelectorAll('.sort-btn').forEach(btn => {
+        btn.textContent = '▼';
+        btn.classList.remove('active');
+        btn.setAttribute('data-order', 'desc');
+    });
+    
+    // 更新当前按钮状态
+    button.textContent = currentOrder === 'desc' ? '▲' : '▼';
+    button.classList.add('active');
+    button.setAttribute('data-order', currentOrder === 'desc' ? 'asc' : 'desc');
+    
+    // 排序行
+    rows.sort((a, b) => {
+        const aValue = parseInt(a.cells[columnIndex].textContent) || 0;
+        const bValue = parseInt(b.cells[columnIndex].textContent) || 0;
+        return currentOrder === 'desc' ? bValue - aValue : aValue - bValue;
+    });
+    
+    // 重新插入排序后的行,确保总计行在最后
+    tbody.innerHTML = '';
+    rows.forEach(row => tbody.appendChild(row));
+    if (totalRow) tbody.appendChild(totalRow);
+}
+        
+        // 初始化所有表格的默认排序（按总计列降序）
+        document.addEventListener('DOMContentLoaded', function() {
+            const tables = document.querySelectorAll('.stats-table, .detail-table');
+            tables.forEach(table => {
+                const totalColumnBtn = table.querySelector('th:last-child .sort-btn');
+                if (totalColumnBtn) {
+                    sortTable(totalColumnBtn, 'desc');
+                }
+            });
+        });
+
+        // 返回顶部按钮功能
+        const backToTopButton = document.querySelector('.back-to-top');
+        
+        window.addEventListener('scroll', () => {
+            if (window.pageYOffset > 300) {
+                backToTopButton.classList.add('visible');
+            } else {
+                backToTopButton.classList.remove('visible');
+            }
+        });
+        
+        backToTopButton.addEventListener('click', () => {
+            window.scrollTo({
+                top: 0
+            });
+        });
+        
+    </script>
+</body>
+</html>
