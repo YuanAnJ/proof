@@ -27,7 +27,7 @@ def add_form_template(request):
     return render(request, 'forms/form.html')
 
 # TODO：完善搜索逻辑，分页逻辑，跳转逻辑
-def query_form(request):
+def query_form_template(request):
     # 获取搜索参数
     search_type = request.GET.get('search_type', 'none')  # 默认为'none'
     search_query = request.GET.get('search_query', '')
@@ -138,9 +138,143 @@ def generate_doc_api(request,number):
     response['Content-Disposition'] = f'attachment; filename="{file_name}_Proof.doc"'
     return response
 
+def export_form_template(request):
+    """导出信息页面视图"""
+    # 获取筛选参数
+    feedback_date_start = request.GET.get('feedback_date_start', '')
+    feedback_date_end = request.GET.get('feedback_date_end', '')
+    search_feedback_department = request.GET.get('search_feedback_department', '')
+    search_authors = request.GET.get('search_authors', '')
+    search_accept_level = request.GET.get('search_accept_level', '')
+    search_instruction_level = request.GET.get('search_instruction_level', '')
+    page = request.GET.get('page')
+
+    # 构建基础查询集
+    data_list = FormsData.objects.filter(is_delete=False)
+    
+    # 按反馈日期范围筛选
+    if feedback_date_start:
+        data_list = data_list.filter(feedback_date__gte=feedback_date_start)
+    if feedback_date_end:
+        data_list = data_list.filter(feedback_date__lte=feedback_date_end)
+    
+    # 按反馈部门筛选
+    if search_feedback_department:
+        departments = [dept.strip() for dept in search_feedback_department.split(',')]
+        dept_query = Q()
+        for dept in departments:
+            dept_query |= Q(feedback_department__icontains=dept)
+        data_list = data_list.filter(dept_query)
+    
+    # 按作者筛选
+    if search_authors:
+        authors = [author.strip() for author in search_authors.split(',')]
+        author_query = Q()
+        for author in authors:
+            author_query |= Q(author__icontains=author) | \
+                           Q(author_2__icontains=author) | \
+                           Q(author_3__icontains=author) | \
+                           Q(author_4__icontains=author) | \
+                           Q(author_5__icontains=author) | \
+                           Q(author_6__icontains=author) | \
+                           Q(author_7__icontains=author) | \
+                           Q(author_8__icontains=author) | \
+                           Q(author_9__icontains=author) | \
+                           Q(author_10__icontains=author)
+        data_list = data_list.filter(author_query)
+    
+    # 按采纳级别筛选
+    if search_accept_level:
+        accept_levels = [level.strip() for level in search_accept_level.split(',')]
+        accept_query = Q()
+        for level in accept_levels:
+            accept_query |= Q(accept_level__icontains=level)
+        data_list = data_list.filter(accept_query)
+    
+    # 按批示级别筛选
+    if search_instruction_level:
+        instruction_levels = [level.strip() for level in search_instruction_level.split(',')]
+        instruction_query = Q()
+        for level in instruction_levels:
+            instruction_query |= Q(instruction_level__icontains=level)
+        data_list = data_list.filter(instruction_query)
+    
+    # 设置每页显示10条数据
+    paginator = Paginator(data_list, 10)
+    
+    try:
+        data = paginator.page(page)
+    except PageNotAnInteger:
+        data = paginator.page(1)
+    except EmptyPage:
+        data = paginator.page(paginator.num_pages)
+    
+    return render(request, 'forms/export.html', {
+        'data': data,
+        'feedback_date_start': feedback_date_start,
+        'feedback_date_end': feedback_date_end,
+        'search_feedback_department': search_feedback_department,
+        'search_authors': search_authors,
+        'search_accept_level': search_accept_level,
+        'search_instruction_level': search_instruction_level,
+        'standard_accept_levels': STANDARD_ACCEPT_LEVELS,
+        'standard_instruction_levels': STANDARD_INSTRUCTION_LEVELS,
+    })
+
 def export_excel_api(request):
-    # 获取所有未删除的数据
+    # 获取筛选参数
+    feedback_date_start = request.GET.get('feedback_date_start', '')
+    feedback_date_end = request.GET.get('feedback_date_end', '')
+    search_feedback_department = request.GET.get('search_feedback_department', '')
+    search_authors = request.GET.get('search_authors', '')
+    search_accept_level = request.GET.get('search_accept_level', '')
+    search_instruction_level = request.GET.get('search_instruction_level', '')
+    
+    # 构建基础查询集
     data = FormsData.objects.filter(is_delete=False)
+    
+    # 应用与export_form相同的筛选逻辑
+    if feedback_date_start:
+        data = data.filter(feedback_date__gte=feedback_date_start)
+    if feedback_date_end:
+        data = data.filter(feedback_date__lte=feedback_date_end)
+    
+    if search_feedback_department:
+        departments = [dept.strip() for dept in search_feedback_department.split(',')]
+        dept_query = Q()
+        for dept in departments:
+            dept_query |= Q(feedback_department__icontains=dept)
+        data = data.filter(dept_query)
+    
+    if search_authors:
+        authors = [author.strip() for author in search_authors.split(',')]
+        author_query = Q()
+        for author in authors:
+            author_query |= Q(author__icontains=author) | \
+                           Q(author_2__icontains=author) | \
+                           Q(author_3__icontains=author) | \
+                           Q(author_4__icontains=author) | \
+                           Q(author_5__icontains=author) | \
+                           Q(author_6__icontains=author) | \
+                           Q(author_7__icontains=author) | \
+                           Q(author_8__icontains=author) | \
+                           Q(author_9__icontains=author) | \
+                           Q(author_10__icontains=author)
+        data = data.filter(author_query)
+    
+    if search_accept_level:
+        accept_levels = [level.strip() for level in search_accept_level.split(',')]
+        accept_query = Q()
+        for level in accept_levels:
+            accept_query |= Q(accept_level__icontains=level)
+        data = data.filter(accept_query)
+    
+    if search_instruction_level:
+        instruction_levels = [level.strip() for level in search_instruction_level.split(',')]
+        instruction_query = Q()
+        for level in instruction_levels:
+            instruction_query |= Q(instruction_level__icontains=level)
+        data = data.filter(instruction_query)
     
     # 创建数据列表
     data_list = []
@@ -320,7 +454,7 @@ def delete_form_api(request, number):
         }, status=500)
 
 # TODO：完善统计分析逻辑
-def statistics_form(request):
+def statistics_form_template(request):
     selected_years = request.GET.getlist('selected_years')
     
     # 获取基础数据集
