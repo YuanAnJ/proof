@@ -145,6 +145,24 @@
             box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
         }
 
+        .btn-batch-import {
+            margin-left: 12px;
+            padding: 12px 24px;
+            background-color: #ff9800;
+            color: white;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            border-radius: 4px;
+            transition: all .3s;
+        }
+
+        .btn-batch-import:hover {
+            background-color: #f57c00;
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(245, 124, 0, 0.3);
+        }
+
         /* 作者管理按钮 */
         .author-btn {
             width: 24px;
@@ -644,6 +662,7 @@
             </div>
             <div class="button-container">
                 <button type="submit" class="btn btn-submit">提交</button>
+                <a href="/forms/batch-import/" class="btn-batch-import">批量导入DOCX</a>
             </div>
         </form>
     </div>

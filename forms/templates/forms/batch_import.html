@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>批量导入DOCX</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Microsoft YaHei', sans-serif;
+            background: url('/static/forms/background.png') center/cover no-repeat fixed;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .home-button {
+            position: fixed;
+            top: 20px;
+            right: 10px;
+            padding: 10px 20px;
+            background: #2196F3;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: .3s;
+            z-index: 2;
+        }
+
+        .home-button:hover {
+            background-color: #1976D2;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+
+        h1 {
+            margin-top: 0;
+            border-bottom: 2px solid #ff9800;
+            display: inline-block;
+            padding-bottom: 8px;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 4px;
+            padding: 10px 16px;
+            cursor: pointer;
+            color: white;
+            transition: .3s;
+        }
+
+        .btn-preview {
+            background-color: #ff9800;
+        }
+
+        .btn-preview:hover {
+            background-color: #f57c00;
+        }
+
+        .btn-confirm {
+            background-color: #4CAF50;
+        }
+
+        .btn-confirm:hover {
+            background-color: #45a049;
+        }
+
+        .btn:disabled {
+            background: #bdbdbd;
+            cursor: not-allowed;
+        }
+
+        .hint {
+            color: #555;
+            margin-bottom: 16px;
+        }
+
+        .table-wrap {
+            overflow: auto;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            max-height: 65vh;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1900px;
+        }
+
+        th,
+        td {
+            border: 1px solid #eee;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+            font-size: 13px;
+        }
+
+        th {
+            background: #fafafa;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 6px;
+            box-sizing: border-box;
+        }
+
+        .row-invalid {
+            background: #fff3f3;
+        }
+
+        .row-warning {
+            background: #fff9ec;
+        }
+
+        .status {
+            font-size: 12px;
+            line-height: 1.4;
+        }
+
+        .status-error {
+            color: #d32f2f;
+        }
+
+        .status-warning {
+            color: #ef6c00;
+        }
+
+        .summary {
+            margin: 12px 0;
+            color: #333;
+        }
+
+        .file-errors {
+            margin: 12px 0;
+            padding: 10px 12px;
+            background: #fff3f3;
+            border: 1px solid #ffcdd2;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <a href="/forms/form/" class="home-button">返回填写信息</a>
+
+    <div class="container">
+        <h1>批量导入DOCX</h1>
+        <p class="hint">上传多个 docx 后系统会自动识别字段。请在表格中修正错误后，再确认提交。反馈日期必须精确到日（YYYY-MM-DD）。</p>
+
+        <div class="toolbar">
+            <input type="file" id="docx-files" multiple accept=".docx">
+            <button id="preview-btn" class="btn btn-preview">解析并预览</button>
+            <button id="confirm-btn" class="btn btn-confirm" disabled>确认提交</button>
+        </div>
+
+        <div id="summary" class="summary"></div>
+        <div id="file-errors" class="file-errors"></div>
+
+        <div class="table-wrap hidden" id="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>源文件</th>
+                        <th>反馈日期</th>
+                        <th>反馈部门</th>
+                        <th>报告题目</th>
+                        <th>作者一</th>
+                        <th>单位一</th>
+                        <th>作者二</th>
+                        <th>单位二</th>
+                        <th>作者三</th>
+                        <th>单位三</th>
+                        <th>作者四</th>
+                        <th>单位四</th>
+                        <th>作者五</th>
+                        <th>单位五</th>
+                        <th>作者六</th>
+                        <th>单位六</th>
+                        <th>作者七</th>
+                        <th>单位七</th>
+                        <th>作者八</th>
+                        <th>单位八</th>
+                        <th>作者九</th>
+                        <th>单位九</th>
+                        <th>作者十</th>
+                        <th>单位十</th>
+                        <th>采纳级别</th>
+                        <th>批示级别</th>
+                        <th>备注</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody id="rows-body"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const previewBtn = document.getElementById('preview-btn');
+        const confirmBtn = document.getElementById('confirm-btn');
+        const fileInput = document.getElementById('docx-files');
+        const rowsBody = document.getElementById('rows-body');
+        const summary = document.getElementById('summary');
+        const tableWrap = document.getElementById('table-wrap');
+        const fileErrorsBox = document.getElementById('file-errors');
+
+        const AUTHOR_INDICES = [2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+        function escapeHtml(value) {
+            return String(value || '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function rowHasErrors(row) {
+            return Array.isArray(row.errors) && row.errors.length > 0;
+        }
+
+        function rowHasWarnings(row) {
+            return Array.isArray(row.warnings) && row.warnings.length > 0;
+        }
+
+        function buildStatusCell(row) {
+            const errors = (row.errors || []).map(item => `<div class="status status-error">${escapeHtml(item)}</div>`).join('');
+            const warnings = (row.warnings || []).map(item => `<div class="status status-warning">${escapeHtml(item)}</div>`).join('');
+            if (!errors && !warnings) {
+                return '<div class="status">可提交</div>';
+            }
+            return `${errors}${warnings}`;
+        }
+
+        function renderRows(rows) {
+            rowsBody.innerHTML = rows.map((row, index) => {
+                const rowClass = rowHasErrors(row) ? 'row-invalid' : (rowHasWarnings(row) ? 'row-warning' : '');
+                return `
+                    <tr class="${rowClass}" data-row-index="${index}">
+                        <td>${escapeHtml(row.source_file)}</td>
+                        <td><input type="text" data-field="feedback_date" value="${escapeHtml(row.feedback_date || row.feedback_date_raw || '')}" placeholder="YYYY-MM-DD"></td>
+                        <td><input type="text" data-field="feedback_department" value="${escapeHtml(row.feedback_department)}"></td>
+                        <td><input type="text" data-field="title" value="${escapeHtml(row.title)}"></td>
+                        <td><input type="text" data-field="author" value="${escapeHtml(row.author)}"></td>
+                        <td><input type="text" data-field="unit" value="${escapeHtml(row.unit)}"></td>
+                        <td><input type="text" data-field="author_2" value="${escapeHtml(row.author_2)}"></td>
+                        <td><input type="text" data-field="unit_2" value="${escapeHtml(row.unit_2)}"></td>
+                        <td><input type="text" data-field="author_3" value="${escapeHtml(row.author_3)}"></td>
+                        <td><input type="text" data-field="unit_3" value="${escapeHtml(row.unit_3)}"></td>
+                        <td><input type="text" data-field="author_4" value="${escapeHtml(row.author_4)}"></td>
+                        <td><input type="text" data-field="unit_4" value="${escapeHtml(row.unit_4)}"></td>
+                        <td><input type="text" data-field="author_5" value="${escapeHtml(row.author_5)}"></td>
+                        <td><input type="text" data-field="unit_5" value="${escapeHtml(row.unit_5)}"></td>
+                        <td><input type="text" data-field="author_6" value="${escapeHtml(row.author_6)}"></td>
+                        <td><input type="text" data-field="unit_6" value="${escapeHtml(row.unit_6)}"></td>
+                        <td><input type="text" data-field="author_7" value="${escapeHtml(row.author_7)}"></td>
+                        <td><input type="text" data-field="unit_7" value="${escapeHtml(row.unit_7)}"></td>
+                        <td><input type="text" data-field="author_8" value="${escapeHtml(row.author_8)}"></td>
+                        <td><input type="text" data-field="unit_8" value="${escapeHtml(row.unit_8)}"></td>
+                        <td><input type="text" data-field="author_9" value="${escapeHtml(row.author_9)}"></td>
+                        <td><input type="text" data-field="unit_9" value="${escapeHtml(row.unit_9)}"></td>
+                        <td><input type="text" data-field="author_10" value="${escapeHtml(row.author_10)}"></td>
+                        <td><input type="text" data-field="unit_10" value="${escapeHtml(row.unit_10)}"></td>
+                        <td><input type="text" data-field="accept_level" value="${escapeHtml(row.accept_level)}" placeholder="可留空，多个用、分隔"></td>
+                        <td><input type="text" data-field="instruction_level" value="${escapeHtml(row.instruction_level)}" placeholder="可留空，多个用、分隔"></td>
+                        <td><input type="text" data-field="remark" value="${escapeHtml(row.remark)}"></td>
+                        <td class="status-col">${buildStatusCell(row)}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function readRowsFromTable() {
+            const rows = [];
+            const trList = rowsBody.querySelectorAll('tr');
+            trList.forEach((tr, index) => {
+                const row = {
+                    row_id: index,
+                    source_file: tr.children[0].textContent.trim(),
+                };
+
+                tr.querySelectorAll('input[data-field]').forEach(input => {
+                    row[input.getAttribute('data-field')] = input.value.trim();
+                });
+
+                AUTHOR_INDICES.forEach(i => {
+                    row[`author_${i}`] = row[`author_${i}`] || '';
+                    row[`unit_${i}`] = row[`unit_${i}`] || '';
+                });
+
+                rows.push(row);
+            });
+            return rows;
+        }
+
+        previewBtn.addEventListener('click', async () => {
+            const files = fileInput.files;
+            if (!files.length) {
+                alert('请先选择docx文件');
+                return;
+            }
+
+            const formData = new FormData();
+            Array.from(files).forEach(file => formData.append('files', file));
+
+            previewBtn.disabled = true;
+            previewBtn.textContent = '解析中...';
+            confirmBtn.disabled = true;
+
+            try {
+                const response = await fetch('/forms/api/batch-import/preview', {
+                    method: 'POST',
+                    body: formData
+                });
+                const result = await response.json();
+
+                if (result.status !== 'success') {
+                    alert(`解析失败: ${result.message}`);
+                    return;
+                }
+
+                renderRows(result.rows || []);
+                tableWrap.classList.remove('hidden');
+                confirmBtn.disabled = !(result.rows && result.rows.length);
+                summary.textContent = `共上传 ${result.summary.total_files} 个文件，解析成功 ${result.summary.parsed_rows} 条，文件错误 ${result.summary.file_error_count} 条。`;
+
+                if (result.file_errors && result.file_errors.length) {
+                    fileErrorsBox.style.display = 'block';
+                    fileErrorsBox.innerHTML = result.file_errors.map(item => `${escapeHtml(item.file)}：${escapeHtml(item.error)}`).join('<br>');
+                } else {
+                    fileErrorsBox.style.display = 'none';
+                    fileErrorsBox.innerHTML = '';
+                }
+            } catch (error) {
+                alert(`解析失败: ${error.message}`);
+            } finally {
+                previewBtn.disabled = false;
+                previewBtn.textContent = '解析并预览';
+            }
+        });
+
+        confirmBtn.addEventListener('click', async () => {
+            const rows = readRowsFromTable();
+            if (!rows.length) {
+                alert('没有可提交的数据');
+                return;
+            }
+
+            confirmBtn.disabled = true;
+            confirmBtn.textContent = '提交中...';
+
+            try {
+                const response = await fetch('/forms/api/batch-import/confirm', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ rows })
+                });
+
+                const result = await response.json();
+                if (result.status !== 'success') {
+                    alert(`提交失败: ${result.message}`);
+                    return;
+                }
+
+                const s = result.summary;
+                alert(`提交完成\n总计: ${s.total}\n新增: ${s.created}\n重复跳过: ${s.skipped_duplicate}\n校验失败: ${s.invalid}`);
+                window.location.href = '/forms/query/';
+            } catch (error) {
+                alert(`提交失败: ${error.message}`);
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.textContent = '确认提交';
+            }
+        });
+    </script>
+</body>
+
+</html>

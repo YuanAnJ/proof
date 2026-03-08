@@ -138,6 +138,6 @@ def generate_doc(data):
 
     # 保存文档
     file_name = f'{data.number}'
-    doc.save('media/证明文件.docx')
+    doc.save('media/proof_file.docx')
 
     return file_name

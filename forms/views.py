@@ -2,13 +2,16 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q
+from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 import json
+import re
 from .models import FormsData  # 确保导入你的数据模型
 from datetime import datetime
 import pandas as pd
-from forms.utils.gd import generate_doc
+from forms.utils.docx_generate import generate_doc
+from forms.utils.docx_import import parse_docx_file
 
 # Create your views here.
 
@@ -25,6 +28,99 @@ def index(request):
 # 创建基本表单视图
 def add_form_template(request):
     return render(request, 'forms/form.html')
+
+
+def batch_import_template(request):
+    return render(request, 'forms/batch_import.html', {
+        'standard_accept_levels': STANDARD_ACCEPT_LEVELS,
+        'standard_instruction_levels': STANDARD_INSTRUCTION_LEVELS,
+    })
+
+
+def _split_values(value):
+    if value is None:
+        return []
+    return [item.strip() for item in re.split(r'[、,，;；]+', str(value)) if item.strip()]
+
+
+def _normalize_levels(raw_value, standard_levels):
+    values = _split_values(raw_value)
+    primary = []
+    other = []
+
+    for item in values:
+        if item in standard_levels or item == '无':
+            if item not in primary:
+                primary.append(item)
+        else:
+            if item not in other:
+                other.append(item)
+
+    return '、'.join(primary), '、'.join(other)
+
+
+def _validate_feedback_date(value):
+    date_str = str(value or '').strip()
+    if not date_str:
+        return False, '反馈日期不能为空'
+
+    if re.match(r'^\d{4}-\d{1,2}$', date_str):
+        return False, '反馈日期仅到月份，请补全到具体日期'
+
+    try:
+        datetime.strptime(date_str, '%Y-%m-%d')
+        return True, ''
+    except ValueError:
+        return False, '反馈日期格式错误，需为YYYY-MM-DD'
+
+
+def _build_duplicate_key(row):
+    return '||'.join([
+        str(row.get('title', '')).strip(),
+        str(row.get('feedback_date', '')).strip(),
+        str(row.get('author', '')).strip(),
+        str(row.get('accept_level', '')).strip(),
+        str(row.get('instruction_level', '')).strip(),
+    ])
+
+
+def _validate_row_data(row):
+    errors = []
+
+    required_fields = {
+        'feedback_department': '反馈部门',
+        'title': '报告题目',
+        'author': '作者一',
+        'unit': '作者一单位',
+    }
+
+    for field, display_name in required_fields.items():
+        if not str(row.get(field, '')).strip():
+            errors.append(f'{display_name}不能为空')
+
+    ok, message = _validate_feedback_date(row.get('feedback_date', ''))
+    if not ok:
+        errors.append(message)
+
+    for i in range(2, 11):
+        author_val = str(row.get(f'author_{i}', '')).strip()
+        unit_val = str(row.get(f'unit_{i}', '')).strip()
+        if (author_val and not unit_val) or (unit_val and not author_val):
+            errors.append(f'作者{i}与单位{i}需同时填写或同时留空')
+
+    return errors
+
+
+def _generate_number():
+    latest_record = FormsData.objects.all().order_by('-id').first()
+    year_part = datetime.now().strftime('%y')
+
+    if latest_record:
+        if year_part == FormsData.get_number_year(latest_record):
+            seq_number = int(FormsData.get_number_seq(latest_record)) + 1
+            return f'JCZX{year_part}{seq_number:04d}'
+        return f'JCZX{year_part}0001'
+    return f'JCZX{year_part}0001'
 
 # TODO：完善搜索逻辑，分页逻辑，跳转逻辑
 def query_form_template(request):
@@ -134,8 +230,8 @@ def generate_doc_api(request,number):
 
     file_name = generate_doc(data)
 
-    response = HttpResponse(open('media/证明文件.docx', 'rb'), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-    response['Content-Disposition'] = f'attachment; filename="{file_name}_Proof.doc"'
+    response = HttpResponse(open('media/proof_file.docx', 'rb'), content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    response['Content-Disposition'] = f'attachment; filename="{file_name}_Proof.docx"'
     return response
 
 def export_form_template(request):
@@ -324,6 +420,209 @@ def export_excel_api(request):
     df.to_excel(response, index=False, engine='openpyxl')
     
     return response
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def batch_import_preview_api(request):
+    try:
+        files = request.FILES.getlist('files')
+        if not files:
+            return JsonResponse({
+                'status': 'error',
+                'message': '请至少上传一个docx文件'
+            }, status=400)
+
+        rows = []
+        file_errors = []
+        for index, uploaded_file in enumerate(files):
+            if not uploaded_file.name.lower().endswith('.docx'):
+                file_errors.append({
+                    'file': uploaded_file.name,
+                    'error': '仅支持docx文件'
+                })
+                continue
+
+            try:
+                parsed = parse_docx_file(uploaded_file)
+                accept_level, other_accept_level = _normalize_levels(
+                    parsed.get('accept_level', ''),
+                    STANDARD_ACCEPT_LEVELS,
+                )
+                instruction_level, other_instruction_level = _normalize_levels(
+                    parsed.get('instruction_level', ''),
+                    STANDARD_INSTRUCTION_LEVELS,
+                )
+
+                row = {
+                    'row_id': index,
+                    'source_file': uploaded_file.name,
+                    'feedback_date': parsed.get('feedback_date', ''),
+                    'feedback_date_raw': parsed.get('feedback_date_raw', ''),
+                    'is_partial_date': bool(parsed.get('is_partial_date', False)),
+                    'feedback_department': parsed.get('feedback_department', ''),
+                    'title': parsed.get('title', ''),
+                    'author': parsed.get('author', ''),
+                    'unit': parsed.get('unit', ''),
+                    'accept_level': accept_level,
+                    'other_accept_level': other_accept_level,
+                    'instruction_level': instruction_level,
+                    'other_instruction_level': other_instruction_level,
+                    'remark': parsed.get('remark', ''),
+                }
+
+                for i in range(2, 11):
+                    row[f'author_{i}'] = parsed.get(f'author_{i}', '')
+                    row[f'unit_{i}'] = parsed.get(f'unit_{i}', '')
+
+                warnings = []
+                if row.get('is_partial_date'):
+                    warnings.append('反馈日期仅精确到月，请在表格中补全到日')
+
+                row['errors'] = _validate_row_data(row)
+                row['warnings'] = warnings
+                rows.append(row)
+            except Exception as exc:
+                file_errors.append({
+                    'file': uploaded_file.name,
+                    'error': f'解析失败: {exc}'
+                })
+
+        return JsonResponse({
+            'status': 'success',
+            'rows': rows,
+            'file_errors': file_errors,
+            'summary': {
+                'total_files': len(files),
+                'parsed_rows': len(rows),
+                'file_error_count': len(file_errors),
+            }
+        })
+    except Exception as exc:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(exc),
+        }, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def batch_import_confirm_api(request):
+    try:
+        payload = json.loads(request.body)
+        rows = payload.get('rows', [])
+        if not isinstance(rows, list) or not rows:
+            return JsonResponse({
+                'status': 'error',
+                'message': '提交数据为空'
+            }, status=400)
+
+        results = []
+        created_count = 0
+        duplicate_count = 0
+        invalid_count = 0
+        batch_keys = set()
+
+        with transaction.atomic():
+            for index, raw_row in enumerate(rows):
+                row = dict(raw_row)
+
+                accept_level, other_accept_level = _normalize_levels(
+                    row.get('accept_level', ''),
+                    STANDARD_ACCEPT_LEVELS,
+                )
+                instruction_level, other_instruction_level = _normalize_levels(
+                    row.get('instruction_level', ''),
+                    STANDARD_INSTRUCTION_LEVELS,
+                )
+
+                row['accept_level'] = accept_level
+                row['other_accept_level'] = other_accept_level
+                row['instruction_level'] = instruction_level
+                row['other_instruction_level'] = other_instruction_level
+
+                row_errors = _validate_row_data(row)
+                duplicate_key = _build_duplicate_key(row)
+
+                if duplicate_key in batch_keys:
+                    results.append({
+                        'row_id': row.get('row_id', index),
+                        'status': 'skipped_duplicate',
+                        'reason': '同一批次内重复记录',
+                    })
+                    duplicate_count += 1
+                    continue
+
+                if row_errors:
+                    results.append({
+                        'row_id': row.get('row_id', index),
+                        'status': 'invalid',
+                        'reason': '；'.join(row_errors),
+                    })
+                    invalid_count += 1
+                    continue
+
+                exists = FormsData.objects.filter(
+                    is_delete=False,
+                    title=str(row.get('title', '')).strip(),
+                    feedback_date=str(row.get('feedback_date', '')).strip(),
+                    author=str(row.get('author', '')).strip(),
+                    accept_level=str(row.get('accept_level', '')).strip(),
+                    instruction_level=str(row.get('instruction_level', '')).strip(),
+                ).exists()
+
+                if exists:
+                    results.append({
+                        'row_id': row.get('row_id', index),
+                        'status': 'skipped_duplicate',
+                        'reason': '与已存在记录重复',
+                    })
+                    duplicate_count += 1
+                    batch_keys.add(duplicate_key)
+                    continue
+
+                form_data = FormsData(
+                    number=_generate_number(),
+                    feedback_date=row.get('feedback_date'),
+                    feedback_department=row.get('feedback_department', ''),
+                    title=row.get('title', ''),
+                    author=row.get('author', ''),
+                    unit=row.get('unit', ''),
+                    accept_level=row.get('accept_level', ''),
+                    other_accept_level=row.get('other_accept_level', ''),
+                    instruction_level=row.get('instruction_level', ''),
+                    other_instruction_level=row.get('other_instruction_level', ''),
+                    remark=row.get('remark', ''),
+                )
+
+                for i in range(2, 11):
+                    setattr(form_data, f'author_{i}', row.get(f'author_{i}', ''))
+                    setattr(form_data, f'unit_{i}', row.get(f'unit_{i}', ''))
+
+                form_data.save()
+                batch_keys.add(duplicate_key)
+                created_count += 1
+                results.append({
+                    'row_id': row.get('row_id', index),
+                    'status': 'created',
+                    'number': form_data.number,
+                })
+
+        return JsonResponse({
+            'status': 'success',
+            'summary': {
+                'total': len(rows),
+                'created': created_count,
+                'skipped_duplicate': duplicate_count,
+                'invalid': invalid_count,
+            },
+            'results': results,
+        })
+    except Exception as exc:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(exc),
+        }, status=400)
 
 @csrf_exempt
 @require_http_methods(["POST"])
