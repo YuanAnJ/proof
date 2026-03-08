@@ -587,6 +587,12 @@
                 // 没有验证失败，显示总结并跳转
                 const s = result.summary;
                 alert(`提交完成\n总计: ${s.total}\n新增: ${s.created}\n重复跳过: ${s.skipped_duplicate}\n校验失败: ${s.invalid}`);
+                if (s.invalid > 0) {
+                    // 如果有校验失败，停留在当前页面
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = '确认提交';
+                    return;
+                }
                 window.location.href = '/forms/query/';
             } catch (error) {
                 alert(`提交失败: ${error.message}`);
