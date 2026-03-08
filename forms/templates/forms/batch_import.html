@@ -271,6 +271,36 @@
         .hidden {
             display: none;
         }
+
+        .validation-errors {
+            margin: 12px 0;
+            padding: 12px;
+            background: #fff3f3;
+            border: 1px solid #ffcdd2;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .validation-errors.show {
+            display: block;
+        }
+
+        .validation-errors h3 {
+            margin: 0 0 10px 0;
+            color: #d32f2f;
+            font-size: 14px;
+        }
+
+        .validation-errors ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #d32f2f;
+            font-size: 13px;
+        }
+
+        .validation-errors li {
+            margin: 5px 0;
+        }
     </style>
 </head>
 
@@ -289,6 +319,7 @@
 
         <div id="summary" class="summary"></div>
         <div id="file-errors" class="file-errors"></div>
+        <div id="validation-errors" class="validation-errors"></div>
 
         <div class="table-wrap hidden" id="table-wrap">
             <table>
@@ -336,6 +367,7 @@
         const summary = document.getElementById('summary');
         const tableWrap = document.getElementById('table-wrap');
         const fileErrorsBox = document.getElementById('file-errors');
+        const validationErrorsBox = document.getElementById('validation-errors');
 
         const AUTHOR_INDICES = [2, 3, 4, 5, 6, 7, 8, 9, 10];
 
@@ -428,6 +460,47 @@
             return rows;
         }
 
+        function showValidationErrors(results) {
+            // 记录第一次编译时是否有无效行
+            let hasInvalid = false;
+            
+            // 找出所有无效行
+            const failedResults = results.filter(r => r.status === 'invalid');
+            
+            if (failedResults.length === 0) {
+                validationErrorsBox.classList.remove('show');
+                return false;
+            }
+
+            hasInvalid = true;
+
+            // 构建错误信息
+            const errorMap = new Map();
+            failedResults.forEach(result => {
+                if (!errorMap.has(result.row_id)) {
+                    errorMap.set(result.row_id, []);
+                }
+                errorMap.get(result.row_id).push(result.reason);
+            });
+
+            // 生成HTML
+            let html = '<h3>以下数据行校验失败，请修正后重新提交</h3><ul>';
+            errorMap.forEach((reasons, rowId) => {
+                const row = rowsBody.querySelectorAll('tr')[rowId];
+                const sourceFile = row ? row.children[0].textContent.trim().split('\n')[0] : `第 ${rowId + 1} 行`;
+                html += `<li><strong>${escapeHtml(sourceFile)}</strong>：${escapeHtml(reasons.join('；'))}</li>`;
+            });
+            html += '</ul>';
+
+            validationErrorsBox.innerHTML = html;
+            validationErrorsBox.classList.add('show');
+
+            // 滚动到错误信息顶部
+            validationErrorsBox.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            return hasInvalid;
+        }
+
         previewBtn.addEventListener('click', async () => {
             const files = fileInput.files;
             if (!files.length) {
@@ -466,6 +539,9 @@
                     fileErrorsBox.style.display = 'none';
                     fileErrorsBox.innerHTML = '';
                 }
+
+                // 清除验证错误提示
+                validationErrorsBox.classList.remove('show');
             } catch (error) {
                 alert(`解析失败: ${error.message}`);
             } finally {
@@ -499,6 +575,16 @@
                     return;
                 }
 
+                // 检查是否有验证失败
+                const results = result.results || [];
+                if (showValidationErrors(results)) {
+                    // 有验证失败，停留在当前页面
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = '确认提交';
+                    return;
+                }
+
+                // 没有验证失败，显示总结并跳转
                 const s = result.summary;
                 alert(`提交完成\n总计: ${s.total}\n新增: ${s.created}\n重复跳过: ${s.skipped_duplicate}\n校验失败: ${s.invalid}`);
                 window.location.href = '/forms/query/';
